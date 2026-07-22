@@ -1,0 +1,858 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Plus, Search, Download, Eye, DollarSign, AlertCircle, X, Loader2 } from "lucide-react";
+
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  job_id: string;
+  total_amount: number;
+  tax?: number;
+  discount?: number;
+  final_amount?: number;
+  status: string;
+  due_date: string;
+  paid_date?: string | null;
+  created_at: string;
+  job?: {
+    job_number: string;
+    booking?: {
+      customer?: {
+        first_name: string;
+        last_name: string;
+      };
+      service?: {
+        name: string;
+      };
+    };
+  };
+}
+
+interface Job {
+  id: string;
+  job_number: string;
+  booking?: {
+    customer?: {
+      first_name: string;
+      last_name: string;
+    };
+  };
+}
+
+export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [formData, setFormData] = useState({
+    job_id: "",
+    total_amount: "",
+    tax_amount: "",
+    discount_amount: "",
+    due_date: "",
+  });
+
+  useEffect(() => {
+    fetchInvoices();
+    fetchJobs();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/invoices");
+      const data = await response.json();
+      setInvoices(data.invoices || []);
+    } catch (error) {
+      console.error("Failed to fetch invoices:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch("/api/jobs");
+      const data = await response.json();
+      setJobs(data.jobs || []);
+    } catch (error) {
+      console.error("Failed to fetch jobs:", error);
+    }
+  };
+
+  const handleCreateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const totalAmount = parseFloat(formData.total_amount);
+      const taxAmount = formData.tax_amount ? parseFloat(formData.tax_amount) : 0;
+      const discountAmount = formData.discount_amount ? parseFloat(formData.discount_amount) : 0;
+      const finalAmount = totalAmount + taxAmount - discountAmount;
+
+      const response = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          job_id: formData.job_id,
+          total_amount: totalAmount,
+          tax: taxAmount,
+          discount: discountAmount,
+          final_amount: finalAmount,
+          due_date: formData.due_date,
+          status: "pending",
+        }),
+      });
+
+      if (response.ok) {
+        alert("Invoice created successfully!");
+        setShowCreateModal(false);
+        setFormData({
+          job_id: "",
+          total_amount: "",
+          tax_amount: "",
+          discount_amount: "",
+          due_date: "",
+        });
+        fetchInvoices();
+      } else {
+        alert("Failed to create invoice");
+      }
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      alert("Error creating invoice");
+    }
+  };
+
+  const handleViewInvoice = async (invoice: Invoice) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}`);
+      const data = await response.json();
+      setSelectedInvoice(data.invoice);
+      setShowViewModal(true);
+    } catch (error) {
+      console.error("Failed to fetch invoice details:", error);
+      alert("Failed to load invoice details");
+    }
+  };
+
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoice.id}`);
+      const data = await response.json();
+      const invoiceData = data.invoice;
+
+      // Import jsPDF dynamically
+      const { jsPDF } = await import("jspdf");
+      const QRCode = (await import("qrcode")).default;
+      
+      const doc = new jsPDF();
+
+      // Generate QR Code for invoice URL
+      const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
+      const qrDataUrl = await QRCode.toDataURL(invoiceUrl, {
+        width: 200,
+        margin: 2,
+      });
+
+      // Header
+      doc.setFontSize(24);
+      doc.setFont("helvetica", "bold");
+      doc.text("INVOICE", 105, 20, { align: "center" });
+
+      // Company Info
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Premier Service Management", 20, 35);
+      doc.text("100 Business Park Drive, Suite 200", 20, 40);
+      doc.text("New York, NY 10001", 20, 45);
+      doc.text("Phone: +1-555-0100", 20, 50);
+
+      // Invoice Details
+      doc.setFont("helvetica", "bold");
+      doc.text("Invoice Number:", 140, 35);
+      doc.text("Date:", 140, 40);
+      doc.text("Due Date:", 140, 45);
+      doc.text("Status:", 140, 50);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(invoiceData.invoice_number, 175, 35);
+      doc.text(new Date(invoiceData.created_at).toLocaleDateString(), 175, 40);
+      doc.text(new Date(invoiceData.due_date).toLocaleDateString(), 175, 45);
+      doc.text(invoiceData.status.toUpperCase(), 175, 50);
+
+      // Customer Details
+      doc.setFont("helvetica", "bold");
+      doc.text("Bill To:", 20, 65);
+      doc.setFont("helvetica", "normal");
+      const customerName = invoiceData.job?.booking?.customer?.name || '';
+      const customerAddress = invoiceData.job?.booking?.customer?.address || '';
+      const customerPhone = invoiceData.job?.booking?.customer?.phone || '';
+      const customerEmail = invoiceData.job?.booking?.customer?.email || '';
+
+      doc.text(customerName, 20, 70);
+      if (customerAddress) doc.text(customerAddress, 20, 75);
+      if (customerPhone) doc.text(customerPhone, 20, 80);
+      if (customerEmail) doc.text(customerEmail, 20, 85);
+
+      // Service Details
+      doc.setFont("helvetica", "bold");
+      doc.text("Service Details:", 20, 100);
+      doc.setFont("helvetica", "normal");
+      const serviceName = invoiceData.job?.booking?.service?.name || 'N/A';
+      const jobNumber = invoiceData.job?.job_number || 'N/A';
+      doc.text(`Job Number: ${jobNumber}`, 20, 105);
+      doc.text(`Service: ${serviceName}`, 20, 110);
+
+      // Table Header
+      doc.setFillColor(240, 240, 240);
+      doc.rect(20, 125, 170, 8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.text("Description", 25, 130);
+      doc.text("Amount", 170, 130);
+
+      // Table Content
+      doc.setFont("helvetica", "normal");
+      let yPos = 140;
+
+      doc.text("Service Fee", 25, yPos);
+      doc.text(`$${invoiceData.total_amount.toFixed(2)}`, 170, yPos);
+      yPos += 7;
+
+      if (invoiceData.tax && invoiceData.tax > 0) {
+        doc.text("Tax", 25, yPos);
+        doc.text(`$${invoiceData.tax.toFixed(2)}`, 170, yPos);
+        yPos += 7;
+      }
+
+      if (invoiceData.discount && invoiceData.discount > 0) {
+        doc.text("Discount", 25, yPos);
+        doc.text(`-$${invoiceData.discount.toFixed(2)}`, 170, yPos);
+        yPos += 7;
+      }
+
+      // Total Line
+      yPos += 5;
+      doc.line(20, yPos, 190, yPos);
+      yPos += 7;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("TOTAL:", 25, yPos);
+      const finalAmount = invoiceData.final_amount || invoiceData.total_amount;
+      doc.text(`$${finalAmount.toFixed(2)}`, 170, yPos);
+
+      // Payment Status
+      if (invoiceData.paid_date) {
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 128, 0);
+        doc.text(`Paid on: ${new Date(invoiceData.paid_date).toLocaleDateString()}`, 25, yPos);
+        doc.setTextColor(0, 0, 0);
+      }
+
+      // QR Code
+      doc.addImage(qrDataUrl, "PNG", 160, yPos + 10, 30, 30);
+      doc.setFontSize(8);
+      doc.text("Scan to view", 165, yPos + 45);
+
+      // Footer
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.text("Thank you for your business!", 105, 280, { align: "center" });
+
+      // Save PDF
+      doc.save(`${invoiceData.invoice_number}.pdf`);
+
+      alert("Invoice PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Failed to download invoice:", error);
+      alert("Failed to download invoice");
+    }
+  };
+
+  const handleShareInvoice = (invoice: Invoice) => {
+    const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
+    navigator.clipboard.writeText(invoiceUrl);
+    alert(`Invoice link copied! Share this link with the customer:\n${invoiceUrl}`);
+  };
+
+  const handleMarkPaid = async (invoiceId: string) => {
+    if (!confirm("Mark this invoice as paid?")) return;
+
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "paid",
+          paid_date: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        alert("Invoice marked as paid!");
+        fetchInvoices();
+      } else {
+        alert("Failed to update invoice");
+      }
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      alert("Error updating invoice");
+    }
+  };
+
+  const filteredInvoices = invoices.filter((invoice) => {
+    const matchesStatus =
+      filterStatus === "all" || invoice.status === filterStatus;
+    const customerName = invoice.job?.booking?.customer 
+      ? `${invoice.job.booking.customer.first_name} ${invoice.job.booking.customer.last_name}`
+      : "";
+    const matchesSearch =
+      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.job?.job_number || "").toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const getStatusCount = (status: string) => {
+    return invoices.filter((inv) => inv.status === status).length;
+  };
+
+  const getTotalAmount = (status: string) => {
+    return invoices
+      .filter((inv) => status === "all" || inv.status === status)
+      .reduce((sum, inv) => sum + inv.total_amount, 0);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
+        <button 
+          onClick={() => setShowCreateModal(true)}
+          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Create Invoice
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-gray-600 text-sm font-semibold">
+              Total Revenue
+            </h3>
+            <DollarSign className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-3xl font-bold text-gray-900">
+            ${getTotalAmount("all").toLocaleString()}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            {invoices.length} invoices
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-gray-600 text-sm font-semibold">Paid</h3>
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          </div>
+          <p className="text-3xl font-bold text-green-600">
+            ${getTotalAmount("paid").toLocaleString()}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            {getStatusCount("paid")} invoices
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-gray-600 text-sm font-semibold">Pending</h3>
+            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          </div>
+          <p className="text-3xl font-bold text-yellow-600">
+            ${getTotalAmount("pending").toLocaleString()}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            {getStatusCount("pending")} invoices
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-gray-600 text-sm font-semibold">Overdue</h3>
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          </div>
+          <p className="text-3xl font-bold text-red-600">
+            ${getTotalAmount("overdue").toLocaleString()}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            {getStatusCount("overdue")} invoices
+          </p>
+        </div>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by invoice number, customer, or job..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === "all"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus("paid")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === "paid"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Paid
+            </button>
+            <button
+              onClick={() => setFilterStatus("pending")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === "pending"
+                  ? "bg-yellow-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              onClick={() => setFilterStatus("overdue")}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filterStatus === "overdue"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Overdue
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Invoices Table */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invoice
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Service
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredInvoices.map((invoice) => {
+                const customerName = invoice.job?.booking?.customer
+                  ? `${invoice.job.booking.customer.first_name} ${invoice.job.booking.customer.last_name}`
+                  : "N/A";
+                const serviceName = invoice.job?.booking?.service?.name || "N/A";
+                
+                return (
+                  <tr key={invoice.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {invoice.invoice_number}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {invoice.job?.job_number || "N/A"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {customerName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {serviceName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-bold text-gray-900">
+                        ${invoice.total_amount.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <StatusBadge status={invoice.status} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {new Date(invoice.due_date).toLocaleDateString()}
+                      </div>
+                      {invoice.paid_date && (
+                        <div className="text-xs text-green-600">
+                          Paid: {new Date(invoice.paid_date).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleViewInvoice(invoice)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          title="View Invoice"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleShareInvoice(invoice)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          title="Share Invoice Link"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadInvoice(invoice)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                          title="Download PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        {invoice.status !== "paid" && (
+                          <button 
+                            onClick={() => handleMarkPaid(invoice.id)}
+                            className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-semibold"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredInvoices.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No invoices found</p>
+          </div>
+        )}
+      </div>
+
+      {/* Create Invoice Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold text-gray-900">Create Invoice</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateInvoice} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Job *
+                </label>
+                <select
+                  required
+                  value={formData.job_id}
+                  onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                >
+                  <option value="">Select a job</option>
+                  {jobs.map((job) => (
+                    <option key={job.id} value={job.id}>
+                      {job.job_number} - {job.booking?.customer 
+                        ? `${job.booking.customer.first_name} ${job.booking.customer.last_name}`
+                        : 'Unknown Customer'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Total Amount *
+                </label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  min="0"
+                  value={formData.total_amount}
+                  onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tax Amount
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.tax_amount}
+                  onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Discount Amount
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.discount_amount}
+                  onChange={(e) => setFormData({ ...formData, discount_amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Due Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                >
+                  Create Invoice
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Invoice Modal */}
+      {showViewModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold text-gray-900">Invoice Details</h2>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Invoice Header */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Invoice Number</h3>
+                  <p className="text-lg font-bold text-gray-900 mt-1">
+                    {selectedInvoice.invoice_number}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Status</h3>
+                  <div className="mt-1">
+                    <StatusBadge status={selectedInvoice.status} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer & Job Info */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Customer</h3>
+                  <p className="text-base text-gray-900 mt-1">
+                    {selectedInvoice.job?.booking?.customer
+                      ? `${selectedInvoice.job.booking.customer.first_name} ${selectedInvoice.job.booking.customer.last_name}`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Job Number</h3>
+                  <p className="text-base text-gray-900 mt-1">
+                    {selectedInvoice.job?.job_number || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Service Info */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Service</h3>
+                <p className="text-base text-gray-900 mt-1">
+                  {selectedInvoice.job?.booking?.service?.name || "N/A"}
+                </p>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Created Date</h3>
+                  <p className="text-base text-gray-900 mt-1">
+                    {new Date(selectedInvoice.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Due Date</h3>
+                  <p className="text-base text-gray-900 mt-1">
+                    {new Date(selectedInvoice.due_date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {selectedInvoice.paid_date && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Paid Date</h3>
+                  <p className="text-base text-green-600 font-semibold mt-1">
+                    {new Date(selectedInvoice.paid_date).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+
+              {/* Amount Details */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Amount Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Amount:</span>
+                    <span className="font-bold text-gray-900">
+                      ${selectedInvoice.total_amount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <button
+                  onClick={() => handleShareInvoice(selectedInvoice)}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Share Link
+                </button>
+                <button
+                  onClick={() => handleDownloadInvoice(selectedInvoice)}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download PDF
+                </button>
+                {selectedInvoice.status !== "paid" && (
+                  <button
+                    onClick={() => {
+                      handleMarkPaid(selectedInvoice.id);
+                      setShowViewModal(false);
+                    }}
+                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  >
+                    Mark as Paid
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { label: string; color: string }> = {
+    paid: { label: "Paid", color: "bg-green-100 text-green-800" },
+    pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
+    overdue: { label: "Overdue", color: "bg-red-100 text-red-800" },
+    cancelled: { label: "Cancelled", color: "bg-gray-100 text-gray-800" },
+  };
+
+  const config = statusConfig[status] || statusConfig.pending;
+
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}
+    >
+      {config.label}
+    </span>
+  );
+}
