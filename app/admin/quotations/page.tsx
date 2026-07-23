@@ -235,7 +235,7 @@ export default function QuotationsPage() {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">Pending Value</h3>
           <p className="text-3xl font-bold text-purple-600">
-            ${quotations.filter(q => q.status === 'sent')
+            RWF {quotations.filter(q => q.status === 'sent')
               .reduce((sum, q) => sum + q.final_amount, 0).toFixed(2)}
           </p>
         </div>
@@ -304,8 +304,8 @@ export default function QuotationsPage() {
                       {quot.booking?.service?.name || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">${quot.final_amount.toFixed(2)}</div>
-                      <div className="text-xs text-gray-500">Tax: ${quot.tax.toFixed(2)}</div>
+                      <div className="text-sm font-medium text-gray-900">RWF {quot.final_amount.toFixed(2)}</div>
+                      <div className="text-xs text-gray-500">Tax: RWF {quot.tax.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusBadge status={quot.status} />
@@ -381,7 +381,7 @@ export default function QuotationsPage() {
                   <option value="">Select a service</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
-                      {service.name} - ${service.price}
+                      {service.name} - RWF {service.price}
                     </option>
                   ))}
                 </select>
@@ -465,7 +465,7 @@ export default function QuotationsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-semibold text-gray-700">Final Amount:</span>
                   <span className="text-2xl font-bold text-indigo-600">
-                    ${formData.final_amount.toFixed(2)}
+                    RWF {formData.final_amount.toFixed(2)}
                   </span>
                 </div>
               </div>

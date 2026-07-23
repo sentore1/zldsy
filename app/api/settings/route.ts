@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { getSupabaseAdmin } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
 
     const { data: settings, error } = await supabase
       .from('system_settings')
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const body = await request.json()
 
     // Check if settings already exist

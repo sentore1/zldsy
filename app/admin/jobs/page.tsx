@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Calendar, Users, MapPin, Sun, Cloud, CloudRain, X } from "lucide-react";
+import { Plus, Search, Calendar, Users, MapPin, Sun, Cloud, CloudRain, X, FileText } from "lucide-react";
 
 interface Job {
   id: string;
@@ -154,6 +154,30 @@ export default function JobsPage() {
     } catch (err) {
       console.error("Failed to update job:", err);
       alert("Failed to update job");
+    }
+  };
+
+  const handleGenerateInvoice = async (jobId: string) => {
+    if (!confirm("Generate invoice for this completed job?")) return;
+
+    try {
+      const response = await fetch("/api/invoices/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Invoice generated successfully!\nInvoice #${data.invoice.invoice_number}\nAmount: RWF ${data.invoice.final_amount.toFixed(2)}\n\nBreakdown:\n- Service: RWF ${data.breakdown.baseServiceCost.toFixed(2)}\n- Materials: RWF ${data.breakdown.materialsCost.toFixed(2)}\n- Labor: RWF ${data.breakdown.laborCost.toFixed(2)}\n- Equipment: RWF ${data.breakdown.equipmentCost.toFixed(2)}\n- Tax: RWF ${data.breakdown.tax.toFixed(2)}`);
+        await fetchJobs(); // Refresh list
+      } else {
+        alert(data.error || "Failed to generate invoice");
+      }
+    } catch (err) {
+      console.error("Failed to generate invoice:", err);
+      alert("Failed to generate invoice");
     }
   };
 
@@ -363,21 +387,33 @@ export default function JobsPage() {
                 )}
               </div>
 
-              <div className="pt-4 border-t">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Update Status:
-                </label>
-                <select
-                  value={job.status}
-                  onChange={(e) => handleUpdateStatus(job.id, e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+              <div className="pt-4 border-t space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Update Status:
+                  </label>
+                  <select
+                    value={job.status}
+                    onChange={(e) => handleUpdateStatus(job.id, e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                
+                {job.status === "completed" && (
+                  <button
+                    onClick={() => handleGenerateInvoice(job.id)}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Generate Invoice
+                  </button>
+                )}
               </div>
             </div>
           </div>

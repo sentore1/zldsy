@@ -122,26 +122,26 @@ export default function DashboardPage() {
         <StatCard
           title="Total Jobs"
           value={data.overview.totalJobs}
-          icon={<Calendar className="w-8 h-8" />}
-          color="bg-blue-500"
+          icon={<Calendar className="w-5 h-5" />}
+          color="bg-[#09ACAD]"
         />
         <StatCard
           title="Ongoing Jobs"
           value={ongoingJobs}
-          icon={<Clock className="w-8 h-8" />}
-          color="bg-purple-500"
+          icon={<Clock className="w-5 h-5" />}
+          color="bg-[#005555]"
         />
         <StatCard
           title="Pending Jobs"
           value={pendingJobs}
-          icon={<CheckCircle className="w-8 h-8" />}
-          color="bg-orange-500"
+          icon={<CheckCircle className="w-5 h-5" />}
+          color="bg-[#28A8AC]"
         />
         <StatCard
           title="Total Customers"
           value={data.overview.totalCustomers}
-          icon={<Users className="w-8 h-8" />}
-          color="bg-indigo-500"
+          icon={<Users className="w-5 h-5" />}
+          color="bg-[#145456]"
         />
       </div>
 
@@ -153,7 +153,7 @@ export default function DashboardPage() {
             <DollarSign className="w-6 h-6 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">
-            ${data.overview.totalRevenue?.toFixed(2) || '0.00'}
+            <span className="text-sm font-normal">RWF</span> {data.overview.totalRevenue?.toFixed(2) || '0.00'}
           </p>
           <p className="text-sm text-gray-500 mt-2">Paid invoices</p>
         </div>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
             <AlertCircle className="w-6 h-6 text-orange-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">
-            ${data.overview.pendingRevenue?.toFixed(2) || '0.00'}
+            <span className="text-sm font-normal">RWF</span> {data.overview.pendingRevenue?.toFixed(2) || '0.00'}
           </p>
           <p className="text-sm text-gray-500 mt-2">Unpaid invoices</p>
         </div>
@@ -291,22 +291,22 @@ export default function DashboardPage() {
           title="Add New Service"
           description="Create a new service offering"
           href="/admin/services"
-          icon={<Briefcase className="w-8 h-8" />}
-          color="bg-blue-500"
+          icon={<Briefcase className="w-5 h-5" />}
+          color="bg-[#09ACAD]"
         />
         <QuickAction
           title="Manage Jobs"
           description="View and update job status"
           href="/admin/jobs"
-          icon={<Calendar className="w-8 h-8" />}
-          color="bg-purple-500"
+          icon={<Calendar className="w-5 h-5" />}
+          color="bg-[#005555]"
         />
         <QuickAction
           title="View Reports"
           description="Access detailed analytics"
           href="/admin/reports"
-          icon={<TrendingUp className="w-8 h-8" />}
-          color="bg-green-500"
+          icon={<TrendingUp className="w-5 h-5" />}
+          color="bg-[#28A8AC]"
         />
       </div>
     </div>
@@ -328,7 +328,7 @@ function StatCard({
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-gray-600 font-semibold">{title}</h3>
-        <div className={`${color} text-white rounded-lg p-2`}>{icon}</div>
+        <div className={`${color} text-white rounded-2xl p-2`}>{icon}</div>
       </div>
       <p className="text-4xl font-bold text-gray-900">{value}</p>
     </div>
@@ -371,7 +371,7 @@ function QuickAction({
       href={href}
       className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition group"
     >
-      <div className={`${color} text-white rounded-lg p-3 w-fit mb-4 group-hover:scale-110 transition`}>
+      <div className={`${color} text-white rounded-2xl p-3 w-fit mb-4 group-hover:scale-110 transition`}>
         {icon}
       </div>
       <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>

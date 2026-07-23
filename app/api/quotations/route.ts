@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { getSupabaseAdmin } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     const bookingId = searchParams.get('booking_id')
     const status = searchParams.get('status')
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const body = await request.json()
 
     // Generate quotation number if not provided

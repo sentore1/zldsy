@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { getSupabaseAdmin } from '@/lib/supabase/client'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const lowStock = searchParams.get('low_stock')
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const body = await request.json()
 
     const { data, error } = await supabase

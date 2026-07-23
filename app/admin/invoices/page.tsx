@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Download, Eye, DollarSign, AlertCircle, X, Loader2 } from "lucide-react";
+import { Plus, Search, Download, Eye, DollarSign, AlertCircle, X, Loader2, CreditCard } from "lucide-react";
 
 interface Invoice {
   id: string;
@@ -48,7 +48,14 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [paymentData, setPaymentData] = useState({
+    amount: "",
+    payment_method: "cash",
+    transaction_reference: "",
+    notes: "",
+  });
   const [formData, setFormData] = useState({
     job_id: "",
     total_amount: "",
@@ -139,6 +146,55 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleRecordPayment = async (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setPaymentData({
+      amount: invoice.final_amount?.toString() || invoice.total_amount.toString(),
+      payment_method: "cash",
+      transaction_reference: "",
+      notes: "",
+    });
+    setShowPaymentModal(true);
+  };
+
+  const handleSubmitPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+
+    try {
+      const response = await fetch("/api/payments/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_id: selectedInvoice.id,
+          amount: parseFloat(paymentData.amount),
+          payment_method: paymentData.payment_method,
+          transaction_reference: paymentData.transaction_reference || undefined,
+          notes: paymentData.notes || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Payment recorded successfully!\n\nInvoice: ${data.invoice.invoice_number}\nAmount Paid: RWF ${data.payment.amount}\nRemaining: RWF ${data.invoice.remaining.toFixed(2)}\nStatus: ${data.invoice.fully_paid ? 'Fully Paid' : 'Partially Paid'}`);
+        setShowPaymentModal(false);
+        setPaymentData({
+          amount: "",
+          payment_method: "cash",
+          transaction_reference: "",
+          notes: "",
+        });
+        fetchInvoices(); // Refresh list
+      } else {
+        alert(data.error || "Failed to record payment");
+      }
+    } catch (error) {
+      console.error("Failed to record payment:", error);
+      alert("Failed to record payment");
+    }
+  };
+
   const handleDownloadInvoice = async (invoice: Invoice) => {
     try {
       const response = await fetch(`/api/invoices/${invoice.id}`);
@@ -219,18 +275,18 @@ export default function InvoicesPage() {
       let yPos = 140;
 
       doc.text("Service Fee", 25, yPos);
-      doc.text(`$${invoiceData.total_amount.toFixed(2)}`, 170, yPos);
+      doc.text(`RWF ${invoiceData.total_amount.toFixed(2)}`, 170, yPos);
       yPos += 7;
 
       if (invoiceData.tax && invoiceData.tax > 0) {
         doc.text("Tax", 25, yPos);
-        doc.text(`$${invoiceData.tax.toFixed(2)}`, 170, yPos);
+        doc.text(`RWF ${invoiceData.tax.toFixed(2)}`, 170, yPos);
         yPos += 7;
       }
 
       if (invoiceData.discount && invoiceData.discount > 0) {
         doc.text("Discount", 25, yPos);
-        doc.text(`-$${invoiceData.discount.toFixed(2)}`, 170, yPos);
+        doc.text(`-RWF ${invoiceData.discount.toFixed(2)}`, 170, yPos);
         yPos += 7;
       }
 
@@ -242,7 +298,7 @@ export default function InvoicesPage() {
       doc.setFontSize(12);
       doc.text("TOTAL:", 25, yPos);
       const finalAmount = invoiceData.final_amount || invoiceData.total_amount;
-      doc.text(`$${finalAmount.toFixed(2)}`, 170, yPos);
+      doc.text(`RWF ${finalAmount.toFixed(2)}`, 170, yPos);
 
       // Payment Status
       if (invoiceData.paid_date) {
@@ -358,7 +414,7 @@ export default function InvoicesPage() {
             <DollarSign className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">
-            ${getTotalAmount("all").toLocaleString()}
+            RWF {getTotalAmount("all").toLocaleString()}
           </p>
           <p className="text-sm text-gray-500 mt-1">
             {invoices.length} invoices
@@ -371,7 +427,7 @@ export default function InvoicesPage() {
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <p className="text-3xl font-bold text-green-600">
-            ${getTotalAmount("paid").toLocaleString()}
+            RWF {getTotalAmount("paid").toLocaleString()}
           </p>
           <p className="text-sm text-gray-500 mt-1">
             {getStatusCount("paid")} invoices
@@ -384,7 +440,7 @@ export default function InvoicesPage() {
             <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
           </div>
           <p className="text-3xl font-bold text-yellow-600">
-            ${getTotalAmount("pending").toLocaleString()}
+            RWF {getTotalAmount("pending").toLocaleString()}
           </p>
           <p className="text-sm text-gray-500 mt-1">
             {getStatusCount("pending")} invoices
@@ -397,7 +453,7 @@ export default function InvoicesPage() {
             <AlertCircle className="w-5 h-5 text-red-600" />
           </div>
           <p className="text-3xl font-bold text-red-600">
-            ${getTotalAmount("overdue").toLocaleString()}
+            RWF {getTotalAmount("overdue").toLocaleString()}
           </p>
           <p className="text-sm text-gray-500 mt-1">
             {getStatusCount("overdue")} invoices
@@ -526,7 +582,7 @@ export default function InvoicesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-bold text-gray-900">
-                        ${invoice.total_amount.toLocaleString()}
+                        RWF {invoice.total_amount.toLocaleString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -569,10 +625,12 @@ export default function InvoicesPage() {
                         </button>
                         {invoice.status !== "paid" && (
                           <button 
-                            onClick={() => handleMarkPaid(invoice.id)}
-                            className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-semibold"
+                            onClick={() => handleRecordPayment(invoice)}
+                            className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-semibold flex items-center gap-1"
+                            title="Record Payment"
                           >
-                            Mark Paid
+                            <CreditCard className="w-3 h-3" />
+                            Record Payment
                           </button>
                         )}
                       </div>
@@ -794,7 +852,7 @@ export default function InvoicesPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Amount:</span>
                     <span className="font-bold text-gray-900">
-                      ${selectedInvoice.total_amount.toFixed(2)}
+                      RWF {selectedInvoice.total_amount.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -834,14 +892,126 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold text-gray-900">Record Payment</h2>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPayment} className="p-6 space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="text-sm text-gray-600">Invoice</div>
+                <div className="text-lg font-bold text-gray-900">{selectedInvoice.invoice_number}</div>
+                <div className="text-sm text-gray-600 mt-2">Total Amount</div>
+                <div className="text-2xl font-bold text-indigo-600">
+                  RWF {(selectedInvoice.final_amount || selectedInvoice.total_amount).toFixed(2)}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Amount *
+                </label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  min="0.01"
+                  max={selectedInvoice.final_amount || selectedInvoice.total_amount}
+                  value={paymentData.amount}
+                  onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter full amount or partial payment
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Method *
+                </label>
+                <select
+                  required
+                  value={paymentData.payment_method}
+                  onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="credit_card">Credit Card</option>
+                  <option value="debit_card">Debit Card</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="check">Check</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transaction Reference
+                  {(paymentData.payment_method === 'bank_transfer' || paymentData.payment_method === 'check') && ' *'}
+                </label>
+                <input
+                  type="text"
+                  required={paymentData.payment_method === 'bank_transfer' || paymentData.payment_method === 'check'}
+                  value={paymentData.transaction_reference}
+                  onChange={(e) => setPaymentData({ ...paymentData, transaction_reference: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="Transaction ID, Check #, etc."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  value={paymentData.notes}
+                  onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="Additional notes about this payment..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Record Payment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
   const statusConfig: Record<string, { label: string; color: string }> = {
-    paid: { label: "Paid", color: "bg-green-100 text-green-800" },
     pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800" },
+    paid: { label: "Paid", color: "bg-green-100 text-green-800" },
     overdue: { label: "Overdue", color: "bg-red-100 text-red-800" },
     cancelled: { label: "Cancelled", color: "bg-gray-100 text-gray-800" },
   };
@@ -849,9 +1019,7 @@ function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || statusConfig.pending;
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
       {config.label}
     </span>
   );

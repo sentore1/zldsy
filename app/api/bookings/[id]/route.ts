@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase/client'
+import { getSupabaseAdmin } from '@/lib/supabase/client'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const { id } = await params
     
     const { data, error } = await supabase
@@ -40,7 +40,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const { id } = await params
     const updates = await request.json()
 
@@ -71,7 +71,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = supabaseAdmin
+    const supabase = getSupabaseAdmin()
     const { id } = await params
     
     const { error } = await supabase

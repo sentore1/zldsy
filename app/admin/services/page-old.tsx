@@ -126,7 +126,7 @@ export default function ServicesPage() {
             Average Price
           </h3>
           <p className="text-3xl font-bold text-purple-600">
-            ${Math.round(services.reduce((sum, s) => sum + s.basePrice, 0) / services.length)}
+            RWF {Math.round(services.reduce((sum, s) => sum + s.basePrice, 0) / services.length)}
           </p>
         </div>
       </div>

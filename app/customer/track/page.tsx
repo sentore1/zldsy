@@ -210,7 +210,7 @@ export default function TrackServicePage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Amount</span>
                     <span className="font-semibold text-green-600">
-                      ${tracking.quotation.amount}
+                      RWF {tracking.quotation.amount.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">

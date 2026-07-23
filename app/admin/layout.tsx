@@ -18,17 +18,41 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
+  Clipboard,
+  Wallet,
+  Boxes,
+  MoreHorizontal,
+  SidebarClose,
+  SidebarOpen,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type Role = "admin" | "manager" | "staff";
+
+const ROLE_LABELS: Record<Role, string> = {
+  admin: "Administrator",
+  manager: "Manager",
+  staff: "Staff",
+};
+
+// Which nav sections each role can see
+const ROLE_ACCESS: Record<Role, string[]> = {
+  admin: ["dashboard", "customers", "operations", "financial", "resources", "more"],
+  manager: ["dashboard", "customers", "operations", "financial", "resources", "reports"],
+  staff: ["dashboard", "jobs"],
+};
+
+function hasAccess(role: Role, section: string) {
+  return ROLE_ACCESS[role]?.includes(section) ?? false;
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userEmail, setUserEmail] = useState("");
+  const [userRole, setUserRole] = useState<Role>("staff");
+  const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     customers: false,
     operations: false,
@@ -45,156 +69,170 @@ export default function AdminLayout({
   });
 
   useEffect(() => {
-    // Check authentication
-    const isAuth = localStorage.getItem("isAuthenticated");
-    const email = localStorage.getItem("userEmail");
-    
-    if (!isAuth) {
-      router.push("/login");
-    } else {
-      setUserEmail(email || "");
-    }
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      setUserEmail(user.email ?? "");
+
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      setUserRole((data?.role as Role) ?? "staff");
+    });
   }, [router]);
 
-  // Determine which section should be pinned based on current path
   useEffect(() => {
-    const newPinnedSections = {
-      customers: pathname?.includes('/customers') || pathname?.includes('/services'),
-      operations: pathname?.includes('/bookings') || pathname?.includes('/quotations') || pathname?.includes('/jobs'),
-      financial: pathname?.includes('/invoices') || pathname?.includes('/payments'),
-      resources: pathname?.includes('/staff') || pathname?.includes('/inventory') || pathname?.includes('/equipment'),
-      more: pathname?.includes('/reports') || pathname?.includes('/settings'),
+    const newPinned = {
+      customers: pathname?.includes("/customers") || pathname?.includes("/services"),
+      operations: pathname?.includes("/bookings") || pathname?.includes("/quotations") || pathname?.includes("/jobs"),
+      financial: pathname?.includes("/invoices") || pathname?.includes("/payments"),
+      resources: pathname?.includes("/staff") || pathname?.includes("/inventory") || pathname?.includes("/equipment"),
+      more: pathname?.includes("/reports") || pathname?.includes("/settings"),
     };
-    setPinnedSections(newPinnedSections);
-    setOpenSections(prev => ({
-      ...prev,
-      ...newPinnedSections
-    }));
+    setPinnedSections(newPinned);
+    setOpenSections((prev) => ({ ...prev, ...newPinned }));
   }, [pathname]);
 
   const handleSectionHover = (section: string, isHovering: boolean) => {
-    // Only respond to hover if section is not pinned
     if (!pinnedSections[section]) {
-      setOpenSections(prev => ({
-        ...prev,
-        [section]: isHovering
-      }));
+      setOpenSections((prev) => ({ ...prev, [section]: isHovering }));
     }
   };
 
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userEmail");
-    
-    // Clear cookie
-    document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    
-    // Redirect to login
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push("/login");
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col overflow-hidden">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold">Admin Panel</h1>
-          {userEmail && (
-            <p className="text-sm text-gray-400 mt-2 truncate">{userEmail}</p>
+      <aside
+        className="text-white flex flex-col overflow-hidden transition-all duration-300"
+        style={{ backgroundColor: "#005555", width: collapsed ? "64px" : "256px" }}
+      >
+        {/* Header */}
+        <div className={`flex items-center border-b border-[#09ACAD]/40 ${collapsed ? "justify-center p-4" : "justify-between p-4 pl-5"}`}>
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <h1 className="text-lg font-bold whitespace-nowrap">Admin Panel</h1>
+              {userEmail && (
+                <p className="text-xs text-gray-400 truncate max-w-[160px]">{userEmail}</p>
+              )}
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-[#09ACAD]/30 text-[#09ACAD] capitalize">
+                {ROLE_LABELS[userRole]}
+              </span>
+            </div>
           )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-1.5 rounded-lg hover:bg-[#09ACAD]/30 transition text-gray-200 flex-shrink-0"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <SidebarOpen size={20} /> : <SidebarClose size={20} />}
+          </button>
         </div>
-        <nav className="space-y-1 px-3 flex-1 overflow-y-auto bg-gray-900">
-          {/* Dashboard - Standalone */}
-          <NavLink href="/admin/dashboard" icon={<LayoutDashboard size={20} />}>
-            Dashboard
-          </NavLink>
 
-          {/* Customers & Services Group */}
-          <NavSection 
-            title="Customers" 
-            isOpen={openSections.customers}
-            onHover={(isHovering) => handleSectionHover('customers', isHovering)}
-          >
-            <NavLink href="/admin/customers" icon={<Users size={16} />} isNested>
-              Customers
+        <nav className="space-y-1 px-2 flex-1 overflow-y-auto pt-2">
+          {hasAccess(userRole, "dashboard") && (
+            <NavLink href="/admin/dashboard" icon={<LayoutDashboard size={20} />} collapsed={collapsed}>
+              Dashboard
             </NavLink>
-            <NavLink href="/admin/services" icon={<Briefcase size={16} />} isNested>
-              Services
-            </NavLink>
-          </NavSection>
+          )}
 
-          {/* Operations Group */}
-          <NavSection 
-            title="Operations" 
-            isOpen={openSections.operations}
-            onHover={(isHovering) => handleSectionHover('operations', isHovering)}
-          >
-            <NavLink href="/admin/bookings" icon={<Calendar size={16} />} isNested>
-              Bookings
-            </NavLink>
-            <NavLink href="/admin/quotations" icon={<FileText size={16} />} isNested>
-              Quotations
-            </NavLink>
-            <NavLink href="/admin/jobs" icon={<Calendar size={16} />} isNested>
+          {hasAccess(userRole, "customers") && (
+            <NavSection
+              title="Customers"
+              icon={<Users size={18} />}
+              isOpen={openSections.customers}
+              onHover={(h) => handleSectionHover("customers", h)}
+              collapsed={collapsed}
+            >
+              <NavLink href="/admin/customers" icon={<Users size={16} />} isNested collapsed={collapsed}>Customers</NavLink>
+              <NavLink href="/admin/services" icon={<Briefcase size={16} />} isNested collapsed={collapsed}>Services</NavLink>
+            </NavSection>
+          )}
+
+          {hasAccess(userRole, "operations") && (
+            <NavSection
+              title="Operations"
+              icon={<Clipboard size={18} />}
+              isOpen={openSections.operations}
+              onHover={(h) => handleSectionHover("operations", h)}
+              collapsed={collapsed}
+            >
+              <NavLink href="/admin/bookings" icon={<Calendar size={16} />} isNested collapsed={collapsed}>Bookings</NavLink>
+              <NavLink href="/admin/quotations" icon={<FileText size={16} />} isNested collapsed={collapsed}>Quotations</NavLink>
+              <NavLink href="/admin/jobs" icon={<Briefcase size={16} />} isNested collapsed={collapsed}>Jobs</NavLink>
+            </NavSection>
+          )}
+
+          {/* Staff role: direct Jobs link without section wrapper */}
+          {userRole === "staff" && (
+            <NavLink href="/admin/jobs" icon={<Briefcase size={20} />} collapsed={collapsed}>
               Jobs
             </NavLink>
-          </NavSection>
+          )}
 
-          {/* Financial Group */}
-          <NavSection 
-            title="Financial" 
-            isOpen={openSections.financial}
-            onHover={(isHovering) => handleSectionHover('financial', isHovering)}
-          >
-            <NavLink href="/admin/invoices" icon={<Receipt size={16} />} isNested>
-              Invoices
-            </NavLink>
-            <NavLink href="/admin/payments" icon={<DollarSign size={16} />} isNested>
-              Payments
-            </NavLink>
-          </NavSection>
+          {hasAccess(userRole, "financial") && (
+            <NavSection
+              title="Financial"
+              icon={<Wallet size={18} />}
+              isOpen={openSections.financial}
+              onHover={(h) => handleSectionHover("financial", h)}
+              collapsed={collapsed}
+            >
+              <NavLink href="/admin/invoices" icon={<Receipt size={16} />} isNested collapsed={collapsed}>Invoices</NavLink>
+              <NavLink href="/admin/payments" icon={<DollarSign size={16} />} isNested collapsed={collapsed}>Payments</NavLink>
+            </NavSection>
+          )}
 
-          {/* Resources Group */}
-          <NavSection 
-            title="Resources" 
-            isOpen={openSections.resources}
-            onHover={(isHovering) => handleSectionHover('resources', isHovering)}
-          >
-            <NavLink href="/admin/staff" icon={<UserCircle size={16} />} isNested>
-              Staff
-            </NavLink>
-            <NavLink href="/admin/inventory" icon={<Package size={16} />} isNested>
-              Inventory
-            </NavLink>
-            <NavLink href="/admin/equipment" icon={<Truck size={16} />} isNested>
-              Equipment
-            </NavLink>
-          </NavSection>
+          {hasAccess(userRole, "resources") && (
+            <NavSection
+              title="Resources"
+              icon={<Boxes size={18} />}
+              isOpen={openSections.resources}
+              onHover={(h) => handleSectionHover("resources", h)}
+              collapsed={collapsed}
+            >
+              <NavLink href="/admin/staff" icon={<UserCircle size={16} />} isNested collapsed={collapsed}>Staff</NavLink>
+              <NavLink href="/admin/inventory" icon={<Package size={16} />} isNested collapsed={collapsed}>Inventory</NavLink>
+              <NavLink href="/admin/equipment" icon={<Truck size={16} />} isNested collapsed={collapsed}>Equipment</NavLink>
+            </NavSection>
+          )}
 
-          {/* More Group (Reports & Settings) */}
-          <NavSection 
-            title="More" 
-            isOpen={openSections.more}
-            onHover={(isHovering) => handleSectionHover('more', isHovering)}
-          >
-            <NavLink href="/admin/reports" icon={<BarChart size={16} />} isNested>
-              Reports
-            </NavLink>
-            <NavLink href="/admin/settings" icon={<Settings size={16} />} isNested>
-              Settings
-            </NavLink>
-          </NavSection>
+          {(hasAccess(userRole, "more") || hasAccess(userRole, "reports")) && (
+            <NavSection
+              title="More"
+              icon={<MoreHorizontal size={18} />}
+              isOpen={openSections.more}
+              onHover={(h) => handleSectionHover("more", h)}
+              collapsed={collapsed}
+            >
+              {hasAccess(userRole, "reports") && (
+                <NavLink href="/admin/reports" icon={<BarChart size={16} />} isNested collapsed={collapsed}>Reports</NavLink>
+              )}
+              {userRole === "admin" && (
+                <NavLink href="/admin/settings" icon={<Settings size={16} />} isNested collapsed={collapsed}>Settings</NavLink>
+              )}
+            </NavSection>
+          )}
         </nav>
-        
-        {/* Logout Button */}
-        <div className="p-3 border-t border-gray-800">
+
+        {/* Logout */}
+        <div className="p-2 border-t border-[#09ACAD]/40">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 transition text-white"
+            title="Logout"
+            className={`w-full flex items-center rounded-lg hover:bg-red-600 transition text-white ${collapsed ? "justify-center p-3" : "gap-3 px-4 py-3"}`}
           >
             <LogOut size={20} />
-            <span>Logout</span>
+            {!collapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -207,10 +245,7 @@ export default function AdminLayout({
               Service Management System
             </h2>
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="text-gray-600 hover:text-gray-900 transition"
-              >
+              <Link href="/" className="text-gray-600 hover:text-gray-900 transition">
                 Back to Home
               </Link>
             </div>
@@ -223,57 +258,61 @@ export default function AdminLayout({
 }
 
 function NavLink({
-  href,
-  icon,
-  children,
-  isNested = false,
+  href, icon, children, isNested = false, collapsed = false,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   isNested?: boolean;
+  collapsed?: boolean;
 }) {
   const pathname = usePathname();
   const isActive = pathname === href;
-  
+
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 rounded-lg transition ${
-        isNested 
-          ? `px-3 py-2 text-sm ${isActive ? "bg-indigo-600 text-white" : "hover:bg-gray-800 text-gray-300"}`
-          : `px-4 py-3 gap-3 ${isActive ? "bg-indigo-600 text-white" : "hover:bg-gray-800 text-gray-300"}`
+      title={collapsed ? String(children) : undefined}
+      className={`flex items-center rounded-lg transition ${
+        collapsed
+          ? `justify-center p-3 ${isActive ? "bg-[#09ACAD] text-white" : "hover:bg-[#09ACAD]/30 text-gray-200"}`
+          : isNested
+          ? `gap-2 px-3 py-2 text-sm ${isActive ? "bg-[#09ACAD] text-white" : "hover:bg-[#09ACAD]/30 text-gray-200"}`
+          : `gap-3 px-4 py-3 ${isActive ? "bg-[#09ACAD] text-white" : "hover:bg-[#09ACAD]/30 text-gray-200"}`
       }`}
     >
       {icon}
-      <span>{children}</span>
+      {!collapsed && <span>{children}</span>}
     </Link>
   );
 }
 
 function NavSection({
-  title,
-  isOpen,
-  onHover,
-  children,
+  title, icon, isOpen, onHover, children, collapsed = false,
 }: {
   title: string;
+  icon?: React.ReactNode;
   isOpen: boolean;
   onHover: (isHovering: boolean) => void;
   children: React.ReactNode;
+  collapsed?: boolean;
 }) {
   return (
-    <div 
-      className="mt-1"
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
-    >
-      <div className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-gray-800 text-gray-300 transition cursor-pointer">
-        <span className="font-semibold text-sm tracking-wide">{title}</span>
-        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+    <div className="mt-1" onMouseEnter={() => onHover(true)} onMouseLeave={() => onHover(false)}>
+      <div
+        title={collapsed ? title : undefined}
+        className={`w-full flex items-center rounded-lg hover:bg-[#09ACAD]/30 text-gray-200 transition cursor-pointer ${
+          collapsed ? "justify-center p-3" : "justify-between px-4 py-2"
+        }`}
+      >
+        <div className={`flex items-center ${collapsed ? "" : "gap-2"}`}>
+          {icon}
+          {!collapsed && <span className="font-semibold text-sm tracking-wide">{title}</span>}
+        </div>
+        {!collapsed && (isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
       </div>
-      {isOpen && (
-        <div className="ml-2 mt-1 space-y-1">
+      {isOpen && !collapsed && (
+        <div className="ml-4 mt-1 space-y-1 border-l border-[#09ACAD]/40 pl-2">
           {children}
         </div>
       )}

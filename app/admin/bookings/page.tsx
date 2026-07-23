@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, CheckCircle, XCircle, Calendar, User, X } from "lucide-react";
+import { Plus, Search, CheckCircle, XCircle, Calendar, User, X, FileText } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -139,6 +139,30 @@ export default function BookingsPage() {
     } catch (err) {
       console.error("Failed to update booking:", err);
       alert("Failed to update booking");
+    }
+  };
+
+  const handleGenerateQuotation = async (bookingId: string) => {
+    if (!confirm("Generate quotation for this booking?")) return;
+
+    try {
+      const response = await fetch("/api/quotations/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: bookingId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Quotation generated successfully!\nQuotation #${data.quotation.quotation_number}\nAmount: RWF ${data.quotation.final_amount.toFixed(2)}`);
+        await fetchBookings(); // Refresh to show updated status
+      } else {
+        alert(data.error || "Failed to generate quotation");
+      }
+    } catch (err) {
+      console.error("Failed to generate quotation:", err);
+      alert("Failed to generate quotation");
     }
   };
 
@@ -357,10 +381,26 @@ export default function BookingsPage() {
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => handleGenerateQuotation(booking.id)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                            title="Generate Quotation"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
                         </>
                       )}
                       {booking.status === "confirmed" && (
-                        <span className="text-xs text-gray-500">Confirmed</span>
+                        <>
+                          <button
+                            onClick={() => handleGenerateQuotation(booking.id)}
+                            className="px-3 py-1 text-xs text-indigo-600 hover:bg-indigo-50 rounded-lg transition font-medium flex items-center gap-1"
+                            title="Generate Quotation"
+                          >
+                            <FileText className="w-3 h-3" />
+                            Generate Quote
+                          </button>
+                        </>
                       )}
                       {booking.status === "cancelled" && (
                         <span className="text-xs text-gray-500">Cancelled</span>

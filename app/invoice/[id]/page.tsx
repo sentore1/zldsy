@@ -1,68 +1,73 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Download, CheckCircle, Loader2 } from "lucide-react";
-import QRCode from "qrcode";
+import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2, CreditCard, Banknote } from "lucide-react";
+import Link from "next/link";
 
 interface Invoice {
   id: string;
-  invoice_number: string;
   job_id: string;
+  subtotal: number;
+  tax_amount: number;
   total_amount: number;
-  tax?: number;
-  discount?: number;
-  final_amount?: number;
+  amount_paid: number;
+  balance_due: number;
   status: string;
   due_date: string;
-  paid_date?: string | null;
+  notes: string;
+  qr_code: string;
   created_at: string;
-  qr_code?: string | null;
-  job?: {
-    job_number: string;
-    booking?: {
-      customer?: {
+  job: {
+    id: string;
+    booking_id: string;
+    scheduled_date: string;
+    completion_date: string;
+    status: string;
+    service_cost: number;
+    materials_cost: number;
+    labor_cost: number;
+    equipment_cost: number;
+    booking: {
+      customer: {
         name: string;
         email: string;
         phone: string;
         address: string;
       };
-      service?: {
+      service: {
         name: string;
         description: string;
+        category: string;
       };
     };
   };
 }
 
-export default function PublicInvoicePage() {
+export default function InvoicePage() {
   const params = useParams();
+  const invoiceId = params.id as string;
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash");
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
 
   useEffect(() => {
     fetchInvoice();
-  }, [params.id]);
-
-  useEffect(() => {
-    if (invoice) {
-      generateQRCode();
-    }
-  }, [invoice]);
+  }, [invoiceId]);
 
   const fetchInvoice = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`/api/invoices/${params.id}`);
-      
+      const response = await fetch(`/api/invoices/${invoiceId}`);
       if (!response.ok) {
-        throw new Error("Invoice not found");
+        throw new Error("Failed to fetch invoice");
       }
-      
       const data = await response.json();
       setInvoice(data.invoice);
+      setPaymentAmount(data.invoice.balance_due.toString());
     } catch (err: any) {
       setError(err.message || "Failed to load invoice");
     } finally {
@@ -70,345 +75,419 @@ export default function PublicInvoicePage() {
     }
   };
 
-  const generateQRCode = async () => {
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid payment amount");
+      return;
+    }
+
+    if (amount > (invoice?.balance_due || 0)) {
+      alert("Payment amount cannot exceed balance due");
+      return;
+    }
+
     try {
-      const invoiceUrl = `${window.location.origin}/invoice/${params.id}`;
-      const qrDataUrl = await QRCode.toDataURL(invoiceUrl, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
+      setPaying(true);
+      const response = await fetch("/api/payments/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invoice_id: invoiceId,
+          amount: amount,
+          payment_method: paymentMethod,
+        }),
       });
-      setQrCodeUrl(qrDataUrl);
-    } catch (err) {
-      console.error("Failed to generate QR code:", err);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Payment failed");
+      }
+
+      alert("Payment recorded successfully!");
+      
+      // Refresh invoice data
+      fetchInvoice();
+    } catch (err: any) {
+      alert(`Payment error: ${err.message}`);
+    } finally {
+      setPaying(false);
     }
-  };
-
-  const downloadPDF = async () => {
-    if (!invoice) return;
-
-    try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-
-      // Header
-      doc.setFontSize(24);
-      doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", 105, 20, { align: "center" });
-
-      // Company Info (you can make this configurable)
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("Premier Service Management", 20, 35);
-      doc.text("100 Business Park Drive, Suite 200", 20, 40);
-      doc.text("New York, NY 10001", 20, 45);
-      doc.text("Phone: +1-555-0100", 20, 50);
-
-      // Invoice Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Invoice Number:", 140, 35);
-      doc.text("Date:", 140, 40);
-      doc.text("Due Date:", 140, 45);
-      doc.text("Status:", 140, 50);
-
-      doc.setFont("helvetica", "normal");
-      doc.text(invoice.invoice_number, 175, 35);
-      doc.text(new Date(invoice.created_at).toLocaleDateString(), 175, 40);
-      doc.text(new Date(invoice.due_date).toLocaleDateString(), 175, 45);
-      doc.text(invoice.status.toUpperCase(), 175, 50);
-
-      // Customer Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Bill To:", 20, 65);
-      doc.setFont("helvetica", "normal");
-      const customerName = invoice.job?.booking?.customer?.name || "N/A";
-      const customerAddress = invoice.job?.booking?.customer?.address || "";
-      const customerPhone = invoice.job?.booking?.customer?.phone || "";
-      const customerEmail = invoice.job?.booking?.customer?.email || "";
-
-      doc.text(customerName, 20, 70);
-      if (customerAddress) doc.text(customerAddress, 20, 75);
-      if (customerPhone) doc.text(customerPhone, 20, 80);
-      if (customerEmail) doc.text(customerEmail, 20, 85);
-
-      // Service Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Service Details:", 20, 100);
-      doc.setFont("helvetica", "normal");
-      const serviceName = invoice.job?.booking?.service?.name || "N/A";
-      const jobNumber = invoice.job?.job_number || "N/A";
-      doc.text(`Job Number: ${jobNumber}`, 20, 105);
-      doc.text(`Service: ${serviceName}`, 20, 110);
-
-      // Table Header
-      doc.setFillColor(240, 240, 240);
-      doc.rect(20, 125, 170, 8, "F");
-      doc.setFont("helvetica", "bold");
-      doc.text("Description", 25, 130);
-      doc.text("Amount", 170, 130);
-
-      // Table Content
-      doc.setFont("helvetica", "normal");
-      let yPos = 140;
-
-      doc.text("Service Fee", 25, yPos);
-      doc.text(`$${invoice.total_amount.toFixed(2)}`, 170, yPos);
-      yPos += 7;
-
-      if (invoice.tax && invoice.tax > 0) {
-        doc.text("Tax", 25, yPos);
-        doc.text(`$${invoice.tax.toFixed(2)}`, 170, yPos);
-        yPos += 7;
-      }
-
-      if (invoice.discount && invoice.discount > 0) {
-        doc.text("Discount", 25, yPos);
-        doc.text(`-$${invoice.discount.toFixed(2)}`, 170, yPos);
-        yPos += 7;
-      }
-
-      // Total Line
-      yPos += 5;
-      doc.line(20, yPos, 190, yPos);
-      yPos += 7;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("TOTAL:", 25, yPos);
-      const finalAmount = invoice.final_amount || invoice.total_amount;
-      doc.text(`$${finalAmount.toFixed(2)}`, 170, yPos);
-
-      // Payment Status
-      if (invoice.paid_date) {
-        yPos += 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 128, 0);
-        doc.text(`Paid on: ${new Date(invoice.paid_date).toLocaleDateString()}`, 25, yPos);
-        doc.setTextColor(0, 0, 0);
-      }
-
-      // QR Code
-      if (qrCodeUrl) {
-        doc.addImage(qrCodeUrl, "PNG", 160, yPos + 10, 30, 30);
-        doc.setFontSize(8);
-        doc.text("Scan to view", 165, yPos + 45);
-      }
-
-      // Footer
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "italic");
-      doc.text("Thank you for your business!", 105, 280, { align: "center" });
-
-      // Save PDF
-      doc.save(`${invoice.invoice_number}.pdf`);
-    } catch (err) {
-      console.error("Failed to generate PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
-    }
-  };
-
-  const copyInvoiceLink = () => {
-    const invoiceUrl = `${window.location.origin}/invoice/${params.id}`;
-    navigator.clipboard.writeText(invoiceUrl);
-    alert("Invoice link copied to clipboard!");
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     );
   }
 
   if (error || !invoice) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <div className="text-red-600 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <FileText className="w-16 h-16 mx-auto mb-4" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoice Not Found</h2>
-          <p className="text-gray-600">{error}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Invoice Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {error || "The invoice you're looking for doesn't exist."}
+          </p>
+          <Link
+            href="/"
+            className="inline-block px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+          >
+            Back to Home
+          </Link>
         </div>
       </div>
     );
   }
 
-  const customerName = invoice.job?.booking?.customer?.name || "N/A";
-  const customerEmail = invoice.job?.booking?.customer?.email || "";
-  const customerPhone = invoice.job?.booking?.customer?.phone || "";
-  const customerAddress = invoice.job?.booking?.customer?.address || "";
-  const serviceName = invoice.job?.booking?.service?.name || "N/A";
-  const finalAmount = invoice.final_amount || invoice.total_amount;
+  const isPaid = invoice.status === "paid";
+  const isOverdue = new Date(invoice.due_date) < new Date() && invoice.status !== "paid";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Invoice Card */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
-            <div className="flex justify-between items-start">
-              <div className="text-white">
-                <h1 className="text-3xl font-bold mb-2">INVOICE</h1>
-                <p className="text-indigo-100">{invoice.invoice_number}</p>
-              </div>
-              <div className="text-right text-white">
-                <StatusBadge status={invoice.status} />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoice</h1>
+              <p className="text-gray-600">
+                Invoice ID: <span className="font-mono">{invoice.id.slice(0, 8)}</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+                  isPaid
+                    ? "bg-green-100 text-green-800"
+                    : isOverdue
+                    ? "bg-red-100 text-red-800"
+                    : invoice.amount_paid > 0
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {isPaid ? (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Paid
+                  </>
+                ) : isOverdue ? (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    Overdue
+                  </>
+                ) : invoice.amount_paid > 0 ? (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    Partially Paid
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    Pending
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-8">
-            {/* Company & Customer Info */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">From</h3>
-                <p className="text-gray-900 font-semibold">Premier Service Management</p>
-                <p className="text-gray-600 text-sm">100 Business Park Drive, Suite 200</p>
-                <p className="text-gray-600 text-sm">New York, NY 10001</p>
-                <p className="text-gray-600 text-sm">+1-555-0100</p>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Bill To</h3>
-                <p className="text-gray-900 font-semibold">{customerName}</p>
-                {customerAddress && <p className="text-gray-600 text-sm">{customerAddress}</p>}
-                {customerPhone && <p className="text-gray-600 text-sm">{customerPhone}</p>}
-                {customerEmail && <p className="text-gray-600 text-sm">{customerEmail}</p>}
-              </div>
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-gray-600">Issue Date:</p>
+              <p className="font-semibold">
+                {new Date(invoice.created_at).toLocaleDateString()}
+              </p>
             </div>
-
-            {/* Invoice Details */}
-            <div className="grid grid-cols-3 gap-6 mb-8 pb-8 border-b">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Invoice Date</p>
-                <p className="text-gray-900 font-medium">
-                  {new Date(invoice.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Due Date</p>
-                <p className="text-gray-900 font-medium">
-                  {new Date(invoice.due_date).toLocaleDateString()}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Job Number</p>
-                <p className="text-gray-900 font-medium">{invoice.job?.job_number || "N/A"}</p>
-              </div>
+            <div>
+              <p className="text-gray-600">Due Date:</p>
+              <p className={`font-semibold ${isOverdue ? "text-red-600" : ""}`}>
+                {new Date(invoice.due_date).toLocaleDateString()}
+              </p>
             </div>
-
-            {/* Service Details */}
-            <div className="mb-8">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 text-sm font-semibold text-gray-700">Description</th>
-                    <th className="text-right py-3 text-sm font-semibold text-gray-700">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-100">
-                    <td className="py-4">
-                      <p className="font-medium text-gray-900">{serviceName}</p>
-                      <p className="text-sm text-gray-500">Service Fee</p>
-                    </td>
-                    <td className="text-right py-4 text-gray-900">${invoice.total_amount.toFixed(2)}</td>
-                  </tr>
-                  {invoice.tax && invoice.tax > 0 && (
-                    <tr className="border-b border-gray-100">
-                      <td className="py-4 text-gray-600">Tax</td>
-                      <td className="text-right py-4 text-gray-900">${invoice.tax.toFixed(2)}</td>
-                    </tr>
-                  )}
-                  {invoice.discount && invoice.discount > 0 && (
-                    <tr className="border-b border-gray-100">
-                      <td className="py-4 text-gray-600">Discount</td>
-                      <td className="text-right py-4 text-green-600">-${invoice.discount.toFixed(2)}</td>
-                    </tr>
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-gray-300">
-                    <td className="py-4 text-lg font-bold text-gray-900">TOTAL</td>
-                    <td className="text-right py-4 text-2xl font-bold text-indigo-600">
-                      ${finalAmount.toFixed(2)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+            <div>
+              <p className="text-gray-600">Job Completed:</p>
+              <p className="font-semibold">
+                {invoice.job.completion_date 
+                  ? new Date(invoice.job.completion_date).toLocaleDateString()
+                  : "In Progress"}
+              </p>
             </div>
-
-            {/* Payment Status */}
-            {invoice.paid_date && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <div>
-                  <p className="text-green-900 font-semibold">Payment Received</p>
-                  <p className="text-green-700 text-sm">
-                    Paid on {new Date(invoice.paid_date).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* QR Code */}
-            {qrCodeUrl && (
-              <div className="flex justify-center mb-6">
-                <div className="text-center">
-                  <img src={qrCodeUrl} alt="Invoice QR Code" className="mx-auto mb-2" />
-                  <p className="text-xs text-gray-500">Scan to view invoice</p>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={downloadPDF}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                Download PDF
-              </button>
-              <button
-                onClick={copyInvoiceLink}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-              >
-                Copy Link
-              </button>
-            </div>
-
-            <p className="text-center text-sm text-gray-500 mt-6">
-              Thank you for your business!
-            </p>
           </div>
         </div>
+
+        {/* Service Details */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-teal-600" />
+            Service Details
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600">Service</p>
+              <p className="text-lg font-semibold">{invoice.job.booking.service.name}</p>
+              <p className="text-sm text-gray-600">{invoice.job.booking.service.description}</p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Category</p>
+                <p className="font-semibold">{invoice.job.booking.service.category}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Service Date</p>
+                <p className="font-semibold flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-teal-600" />
+                  {new Date(invoice.job.scheduled_date).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Customer Details */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <User className="w-5 h-5 text-teal-600" />
+            Bill To
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3">
+              <User className="w-5 h-5 text-gray-400 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600">Name</p>
+                <p className="font-semibold">{invoice.job.booking.customer.name}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Phone className="w-5 h-5 text-gray-400 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600">Phone</p>
+                <p className="font-semibold">{invoice.job.booking.customer.phone}</p>
+              </div>
+            </div>
+            {invoice.job.booking.customer.email && (
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-gray-400 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="font-semibold">{invoice.job.booking.customer.email}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 text-gray-400 mt-1" />
+              <div>
+                <p className="text-sm text-gray-600">Address</p>
+                <p className="font-semibold">{invoice.job.booking.customer.address}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cost Breakdown */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-teal-600" />
+            Cost Breakdown
+          </h2>
+          <div className="space-y-3">
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="text-gray-600">Service Cost</span>
+              <span className="font-semibold">RWF {invoice.job.service_cost.toLocaleString()}</span>
+            </div>
+            {invoice.job.materials_cost > 0 && (
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span className="text-gray-600">Materials</span>
+                <span className="font-semibold">RWF {invoice.job.materials_cost.toLocaleString()}</span>
+              </div>
+            )}
+            {invoice.job.labor_cost > 0 && (
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span className="text-gray-600">Labor</span>
+                <span className="font-semibold">RWF {invoice.job.labor_cost.toLocaleString()}</span>
+              </div>
+            )}
+            {invoice.job.equipment_cost > 0 && (
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span className="text-gray-600">Equipment</span>
+                <span className="font-semibold">RWF {invoice.job.equipment_cost.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-semibold">RWF {invoice.subtotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <span className="text-gray-600">Tax (18%)</span>
+              <span className="font-semibold">RWF {invoice.tax_amount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between py-3 bg-gray-50 px-4 rounded-lg">
+              <span className="text-lg font-bold text-gray-900">Total Amount</span>
+              <span className="text-2xl font-bold text-gray-900">
+                RWF {invoice.total_amount.toLocaleString()}
+              </span>
+            </div>
+            {invoice.amount_paid > 0 && (
+              <>
+                <div className="flex justify-between py-2 border-b border-gray-200">
+                  <span className="text-gray-600">Amount Paid</span>
+                  <span className="font-semibold text-green-600">
+                    -RWF {invoice.amount_paid.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between py-3 bg-teal-50 px-4 rounded-lg">
+                  <span className="text-lg font-bold text-gray-900">Balance Due</span>
+                  <span className="text-2xl font-bold text-teal-600">
+                    RWF {invoice.balance_due.toLocaleString()}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {invoice.notes && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-semibold text-blue-900 mb-1">Notes:</p>
+              <p className="text-sm text-blue-800">{invoice.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* QR Code */}
+        {invoice.qr_code && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Invoice QR Code
+            </h3>
+            <img
+              src={invoice.qr_code}
+              alt="Invoice QR Code"
+              className="mx-auto w-48 h-48"
+            />
+            <p className="text-sm text-gray-600 mt-2">
+              Scan this code for payment or to view invoice
+            </p>
+          </div>
+        )}
+
+        {/* Payment Section */}
+        {!isPaid && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-teal-600" />
+              Make Payment
+            </h2>
+
+            <form onSubmit={handlePayment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Method
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { value: "cash", label: "Cash", icon: Banknote },
+                    { value: "card", label: "Card", icon: CreditCard },
+                    { value: "bank_transfer", label: "Bank Transfer", icon: DollarSign },
+                    { value: "mobile_money", label: "Mobile Money", icon: Phone },
+                  ].map((method) => (
+                    <label
+                      key={method.value}
+                      className={`cursor-pointer border-2 rounded-lg p-4 flex flex-col items-center gap-2 transition ${
+                        paymentMethod === method.value
+                          ? "border-teal-600 bg-teal-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.value}
+                        checked={paymentMethod === method.value}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="sr-only"
+                      />
+                      <method.icon className="w-6 h-6" />
+                      <span className="text-sm font-medium">{method.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Amount (RWF)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  max={invoice.balance_due}
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                  placeholder="Enter amount"
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Balance due: RWF {invoice.balance_due.toLocaleString()}
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={paying}
+                className="w-full px-6 py-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {paying ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Processing Payment...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    Confirm Payment
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> This is for recording manual payments. For online payment integration,
+                please contact our team or use the payment gateway options when available.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isPaid && (
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Invoice Paid in Full
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Thank you for your payment! A receipt has been sent to your email.
+            </p>
+            <Link
+              href="/"
+              className="inline-block px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-semibold"
+            >
+              Back to Home
+            </Link>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, { label: string; color: string }> = {
-    paid: { label: "Paid", color: "bg-green-500" },
-    pending: { label: "Pending", color: "bg-yellow-500" },
-    overdue: { label: "Overdue", color: "bg-red-500" },
-    cancelled: { label: "Cancelled", color: "bg-gray-500" },
-  };
-
-  const config = statusConfig[status] || statusConfig.pending;
-
-  return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white ${config.color}`}>
-      {config.label}
-    </span>
   );
 }

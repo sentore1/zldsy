@@ -1,10 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Calendar, User, Phone, Mail, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { Upload, Calendar, User, Phone, Mail, MapPin, Loader2 } from "lucide-react";
+
+interface Service {
+  id: string;
+  name: string;
+  description: string;
+  base_price: number;
+  unit: string;
+  category: string;
+  is_active: boolean;
+}
 
 export default function BookingPage() {
+  const searchParams = useSearchParams();
+  const serviceIdFromUrl = searchParams.get("service");
+
   const [step, setStep] = useState(1);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     service: "",
     name: "",
@@ -16,14 +32,35 @@ export default function BookingPage() {
     photos: [] as File[],
   });
 
-  const services = [
-    { id: "1", name: "Cleaning Service", basePrice: 50 },
-    { id: "2", name: "Fumigation", basePrice: 80 },
-    { id: "3", name: "Security Services", basePrice: 100 },
-    { id: "4", name: "Maintenance", basePrice: 60 },
-    { id: "5", name: "Landscaping", basePrice: 70 },
-    { id: "6", name: "Construction Support", basePrice: 150 },
-  ];
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  useEffect(() => {
+    // Pre-select service if provided in URL
+    if (serviceIdFromUrl && services.length > 0) {
+      const serviceExists = services.find(s => s.id === serviceIdFromUrl);
+      if (serviceExists) {
+        setFormData(prev => ({ ...prev, service: serviceIdFromUrl }));
+      }
+    }
+  }, [serviceIdFromUrl, services]);
+
+  const fetchServices = async () => {
+    try {
+      const response = await fetch("/api/services");
+      if (response.ok) {
+        const data = await response.json();
+        const servicesArray = data.services || [];
+        setServices(servicesArray.filter((s: Service) => s.is_active));
+      }
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -34,16 +71,70 @@ export default function BookingPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 3) {
       setStep(step + 1);
     } else {
       // Submit booking
-      console.log("Booking submitted:", formData);
-      alert(
-        "Booking submitted successfully! You will receive a quotation shortly."
-      );
+      try {
+        setLoading(true);
+        
+        // Upload photos first if any
+        let photoUrls: string[] = [];
+        if (formData.photos.length > 0) {
+          const uploadFormData = new FormData();
+          formData.photos.forEach(photo => {
+            uploadFormData.append('files', photo);
+          });
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            photoUrls = uploadData.urls || [];
+          }
+        }
+        
+        // Create booking
+        const response = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: formData.service,
+            preferred_date: formData.preferredDate,
+            notes: formData.notes,
+            customer_info: {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone,
+              address: formData.address,
+            },
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create booking');
+        }
+        
+        const data = await response.json();
+        
+        // Success - show message and redirect
+        alert(
+          "Booking submitted successfully! You will receive a quotation shortly via email/SMS."
+        );
+        
+        // Redirect to tracking page
+        window.location.href = `/customer/track?booking=${data.booking.id}`;
+      } catch (error: any) {
+        console.error('Booking error:', error);
+        alert(`Failed to submit booking: ${error.message}. Please try again.`);
+        setLoading(false);
+      }
     }
   };
 
@@ -64,9 +155,8 @@ export default function BookingPage() {
           />
           <div className="flex-1 h-1 bg-gray-200 mx-4">
             <div
-              className={`h-full ${
-                step > 1 ? "bg-indigo-600" : "bg-gray-200"
-              } transition-all`}
+              className={`h-full transition-all`}
+              style={{ backgroundColor: step > 1 ? '#28A8AC' : '#E5E7EB' }}
             />
           </div>
           <StepIndicator
@@ -77,9 +167,8 @@ export default function BookingPage() {
           />
           <div className="flex-1 h-1 bg-gray-200 mx-4">
             <div
-              className={`h-full ${
-                step > 2 ? "bg-indigo-600" : "bg-gray-200"
-              } transition-all`}
+              className={`h-full transition-all`}
+              style={{ backgroundColor: step > 2 ? '#28A8AC' : '#E5E7EB' }}
             />
           </div>
           <StepIndicator
@@ -98,21 +187,30 @@ export default function BookingPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Service *
                 </label>
-                <select
-                  required
-                  value={formData.service}
-                  onChange={(e) =>
-                    setFormData({ ...formData, service: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                >
-                  <option value="">Choose a service</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name} - Starting from ${service.basePrice}
-                    </option>
-                  ))}
-                </select>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={formData.service}
+                    onChange={(e) =>
+                      setFormData({ ...formData, service: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    style={{ outlineColor: '#28A8AC' }}
+                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                    onBlur={(e) => e.target.style.boxShadow = ''}
+                  >
+                    <option value="">Choose a service</option>
+                    {services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name} - RWF {service.base_price.toLocaleString()} / {service.unit}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -128,7 +226,10 @@ export default function BookingPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    style={{ outlineColor: '#28A8AC' }}
+                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                    onBlur={(e) => e.target.style.boxShadow = ''}
                     placeholder="John Doe"
                   />
                 </div>
@@ -145,7 +246,10 @@ export default function BookingPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    style={{ outlineColor: '#28A8AC' }}
+                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                    onBlur={(e) => e.target.style.boxShadow = ''}
                     placeholder="+1 234 567 8900"
                   />
                 </div>
@@ -162,7 +266,10 @@ export default function BookingPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: '#28A8AC' }}
+                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                  onBlur={(e) => e.target.style.boxShadow = ''}
                   placeholder="john@example.com"
                 />
               </div>
@@ -178,7 +285,10 @@ export default function BookingPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: '#28A8AC' }}
+                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                  onBlur={(e) => e.target.style.boxShadow = ''}
                   rows={3}
                   placeholder="Enter complete address"
                 />
@@ -196,7 +306,10 @@ export default function BookingPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, preferredDate: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: '#28A8AC' }}
+                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                  onBlur={(e) => e.target.style.boxShadow = ''}
                   min={new Date().toISOString().split("T")[0]}
                 />
               </div>
@@ -210,7 +323,10 @@ export default function BookingPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, notes: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: '#28A8AC' }}
+                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
+                  onBlur={(e) => e.target.style.boxShadow = ''}
                   rows={3}
                   placeholder="Any special requirements or instructions"
                 />
@@ -222,7 +338,7 @@ export default function BookingPage() {
           {step === 2 && (
             <div className="space-y-6">
               <div className="text-center">
-                <Upload className="w-16 h-16 text-indigo-600 mx-auto mb-4" />
+                <Upload className="w-16 h-16 mx-auto mb-4" style={{ color: '#28A8AC' }} />
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   Upload Photos (Optional)
                 </h2>
@@ -232,7 +348,7 @@ export default function BookingPage() {
                 </p>
               </div>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-600 transition">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition hover:border-[#28A8AC]">
                 <input
                   type="file"
                   multiple
@@ -289,7 +405,10 @@ export default function BookingPage() {
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                  style={{ backgroundColor: '#28A8AC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#239095'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28A8AC'}
                 >
                   Continue
                 </button>
@@ -310,7 +429,7 @@ export default function BookingPage() {
                     <div>
                       <p className="text-sm text-gray-600">Service</p>
                       <p className="font-semibold">
-                        {services.find((s) => s.id === formData.service)?.name}
+                        {services.find((s) => s.id === formData.service)?.name || "N/A"}
                       </p>
                     </div>
                     <div>
@@ -378,7 +497,10 @@ export default function BookingPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                  style={{ backgroundColor: '#28A8AC' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#239095'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28A8AC'}
                 >
                   Submit Booking
                 </button>
@@ -391,7 +513,10 @@ export default function BookingPage() {
             <div className="mt-8">
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                className="w-full px-6 py-3 text-white rounded-lg transition font-medium"
+                style={{ backgroundColor: '#28A8AC' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#239095'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28A8AC'}
               >
                 Continue to Upload Photos
               </button>
@@ -418,12 +543,11 @@ function StepIndicator({
     <div className="flex flex-col items-center">
       <div
         className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
-          completed
-            ? "bg-indigo-600 text-white"
-            : active
-            ? "bg-indigo-600 text-white"
+          completed || active
+            ? "text-white"
             : "bg-gray-200 text-gray-600"
         }`}
+        style={completed || active ? { backgroundColor: '#28A8AC' } : {}}
       >
         {completed ? "✓" : number}
       </div>

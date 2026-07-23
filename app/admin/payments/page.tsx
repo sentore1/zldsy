@@ -190,7 +190,7 @@ export default function PaymentsPage() {
 
       doc.setFont("helvetica", "normal");
       doc.text(`Payment for Invoice ${payment.invoice?.invoice_number || "N/A"}`, 25, 115);
-      doc.text(`$${payment.amount.toFixed(2)}`, 170, 115);
+      doc.text(`RWF ${payment.amount.toFixed(2)}`, 170, 115);
 
       // Payment Method
       doc.text("Payment Method:", 25, 125);
@@ -200,7 +200,7 @@ export default function PaymentsPage() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.text("AMOUNT PAID:", 25, 140);
-      doc.text(`$${payment.amount.toFixed(2)}`, 170, 140);
+      doc.text(`RWF ${payment.amount.toFixed(2)}`, 170, 140);
 
       // Notes
       if (payment.notes) {
@@ -276,18 +276,18 @@ export default function PaymentsPage() {
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">Total Revenue</h3>
-          <p className="text-3xl font-bold text-green-600">${totalRevenue.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-green-600">RWF {totalRevenue.toFixed(2)}</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">This Month</h3>
           <p className="text-3xl font-bold text-blue-600">
-            ${thisMonthRevenue.toFixed(2)}
+            RWF {thisMonthRevenue.toFixed(2)}
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">Average Payment</h3>
           <p className="text-3xl font-bold text-purple-600">
-            ${payments.length > 0 ? (totalRevenue / payments.length).toFixed(2) : '0.00'}
+            RWF {payments.length > 0 ? (totalRevenue / payments.length).toFixed(2) : '0.00'}
           </p>
         </div>
       </div>
@@ -388,7 +388,7 @@ export default function PaymentsPage() {
                       {payment.invoice?.job?.booking?.customer?.name || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-bold text-green-600">${payment.amount.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-green-600">RWF {payment.amount.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <PaymentMethodBadge method={payment.payment_method} />
@@ -463,7 +463,7 @@ export default function PaymentsPage() {
                   <option value="">Select an invoice</option>
                   {invoices.map((invoice) => (
                     <option key={invoice.id} value={invoice.id}>
-                      {invoice.invoice_number} - {invoice.job?.booking?.customer?.name || 'Unknown'} - ${invoice.final_amount.toFixed(2)} ({invoice.status})
+                      {invoice.invoice_number} - {invoice.job?.booking?.customer?.name || 'Unknown'} - RWF {invoice.final_amount.toFixed(2)} ({invoice.status})
                     </option>
                   ))}
                 </select>
@@ -595,7 +595,7 @@ export default function PaymentsPage() {
               <div>
                 <h3 className="text-sm font-medium text-gray-500">Amount Paid</h3>
                 <p className="text-3xl font-bold text-green-600 mt-1">
-                  ${selectedPayment.amount.toFixed(2)}
+                  RWF {selectedPayment.amount.toFixed(2)}
                 </p>
               </div>
 
@@ -620,7 +620,7 @@ export default function PaymentsPage() {
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Invoice Amount</h3>
                     <p className="text-base text-gray-900 mt-1">
-                      ${selectedPayment.invoice?.final_amount?.toFixed(2) || '0.00'}
+                      RWF {selectedPayment.invoice?.final_amount?.toFixed(2) || '0.00'}
                     </p>
                   </div>
                   <div>

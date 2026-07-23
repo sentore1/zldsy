@@ -232,7 +232,7 @@ export default function StaffPage() {
             Avg Rate
           </h3>
           <p className="text-3xl font-bold text-purple-600">
-            ${staff.length > 0 ? (staff.reduce((sum, s) => sum + s.hourly_rate, 0) / staff.length).toFixed(0) : 0}
+            RWF {staff.length > 0 ? (staff.reduce((sum, s) => sum + s.hourly_rate, 0) / staff.length).toFixed(0) : 0}
           </p>
         </div>
       </div>

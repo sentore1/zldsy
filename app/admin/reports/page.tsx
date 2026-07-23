@@ -234,7 +234,7 @@ export default function ReportsPage() {
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
             <p className="text-green-100 text-sm mb-1">Total Revenue</p>
             <p className="text-3xl font-bold">
-              ${financialData.totalRevenue.toLocaleString()}
+              RWF {financialData.totalRevenue.toLocaleString()}
             </p>
             <p className="text-green-100 text-xs mt-2">
               ↑ 12% from last month
@@ -244,7 +244,7 @@ export default function ReportsPage() {
           <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg p-6 text-white">
             <p className="text-red-100 text-sm mb-1">Total Expenses</p>
             <p className="text-3xl font-bold">
-              ${financialData.totalExpenses.toLocaleString()}
+              RWF {financialData.totalExpenses.toLocaleString()}
             </p>
             <p className="text-red-100 text-xs mt-2">↓ 5% from last month</p>
           </div>
@@ -252,7 +252,7 @@ export default function ReportsPage() {
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
             <p className="text-blue-100 text-sm mb-1">Net Profit</p>
             <p className="text-3xl font-bold">
-              ${financialData.netProfit.toLocaleString()}
+              RWF {financialData.netProfit.toLocaleString()}
             </p>
             <p className="text-blue-100 text-xs mt-2">
               ↑ 18% from last month
@@ -290,7 +290,7 @@ export default function ReportsPage() {
                   ></div>
                 </div>
                 <span className="font-semibold text-gray-900 w-24 text-right">
-                  ${financialData.laborCosts.toLocaleString()}
+                  RWF {financialData.laborCosts.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function ReportsPage() {
                   ></div>
                 </div>
                 <span className="font-semibold text-gray-900 w-24 text-right">
-                  ${financialData.materialCosts.toLocaleString()}
+                  RWF {financialData.materialCosts.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -330,7 +330,7 @@ export default function ReportsPage() {
                   ></div>
                 </div>
                 <span className="font-semibold text-gray-900 w-24 text-right">
-                  ${financialData.equipmentCosts.toLocaleString()}
+                  RWF {financialData.equipmentCosts.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -350,7 +350,7 @@ export default function ReportsPage() {
                   ></div>
                 </div>
                 <span className="font-semibold text-gray-900 w-24 text-right">
-                  ${financialData.overheadCosts.toLocaleString()}
+                  RWF {financialData.overheadCosts.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -394,7 +394,7 @@ export default function ReportsPage() {
           <div className="bg-gray-50 rounded-lg p-6">
             <p className="text-gray-600 text-sm mb-1">Avg Job Value</p>
             <p className="text-3xl font-bold text-indigo-600">
-              ${operationalData.averageJobValue}
+              RWF {operationalData.averageJobValue}
             </p>
           </div>
           <div className="bg-gray-50 rounded-lg p-6">

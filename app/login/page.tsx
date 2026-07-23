@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,89 +20,99 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    try {
-      // Simple authentication check (replace with Supabase auth later)
-      // For now, hardcoded admin credentials
-      if (email === "admin@zldsystem.com" && password === "admin123") {
-        // Store auth token in localStorage
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userEmail", email);
-        
-        // Set cookie for middleware
-        document.cookie = "isAuthenticated=true; path=/; max-age=86400"; // 24 hours
-        
-        // Redirect to admin dashboard
-        router.push("/admin/dashboard");
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError(error.message);
       setLoading(false);
+      return;
     }
+
+    router.push("/admin/dashboard");
+    router.refresh();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo & Title */}
-        <div className="text-center mb-8">
-          <div className="bg-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 shadow-2xl">
-            <LogIn className="w-10 h-10 text-indigo-600" />
+    <div className="min-h-screen bg-white flex">
+      {/* Left Side - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="bg-white p-1 rounded">
+                <Image
+                  src="/logo.png"
+                  alt="Service Portal"
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto"
+                />
+              </div>
+              <span className="text-2xl font-semibold text-gray-900">
+                Service Portal
+              </span>
+            </Link>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">
-            ZLD System
-          </h1>
-          <p className="text-indigo-100">
-            Service Management Portal
-          </p>
-        </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Admin Login
-          </h2>
+          {/* Title */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back
+            </h1>
+            <p className="text-gray-600">
+              Sign in to access the admin dashboard
+            </p>
+          </div>
 
+          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="mb-6 p-4 border border-red-200 rounded-lg bg-red-50">
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
+          {/* Login Form */}
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email Address
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Email
               </label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@zldsystem.com"
+                placeholder="your@email.com"
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition pr-12"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -113,51 +126,41 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Logging in...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Signing in...
                 </>
               ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  Sign In
-                </>
+                "Sign in"
               )}
             </button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm font-semibold text-blue-900 mb-2">
-              Demo Credentials:
-            </p>
-            <p className="text-sm text-blue-700">
-              <strong>Email:</strong> admin@zldsystem.com
-            </p>
-            <p className="text-sm text-blue-700">
-              <strong>Password:</strong> admin123
-            </p>
-          </div>
-
           {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              © 2026 ZLD System. All rights reserved.
-            </p>
+          <div className="mt-8">
+            <Link
+              href="/"
+              className="text-sm text-gray-600 hover:text-gray-900 transition"
+            >
+              ← Back to home
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Back to Home */}
-        <div className="text-center mt-6">
-          <button
-            onClick={() => router.push("/")}
-            className="text-white hover:text-indigo-100 transition"
-          >
-            ← Back to Home
-          </button>
+      {/* Right Side */}
+      <div className="hidden lg:flex flex-1 bg-gray-50 items-center justify-center p-8">
+        <div className="max-w-md text-center">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Service Management System
+          </h2>
+          <p className="text-lg text-gray-600">
+            Manage your service business efficiently with our comprehensive
+            admin dashboard
+          </p>
         </div>
       </div>
     </div>

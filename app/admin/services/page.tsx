@@ -8,8 +8,12 @@ interface Service {
   name: string;
   description: string | null;
   base_price: number;
+  min_price: number | null;
+  max_price: number | null;
+  display_price_type: 'single' | 'range';
   unit: string | null;
   category: string | null;
+  image_url: string | null;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -29,10 +33,16 @@ export default function ServicesPage() {
     name: "",
     description: "",
     category: "",
+    display_price_type: "single" as 'single' | 'range',
     base_price: "",
+    min_price: "",
+    max_price: "",
     unit: "",
+    image_url: "",
     is_active: true,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   // Fetch services
   const fetchServices = async () => {
@@ -89,13 +99,37 @@ export default function ServicesPage() {
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let uploadedImageUrl = formData.image_url;
+
+      // Upload image if selected
+      if (imageFile) {
+        uploadedImageUrl = await uploadServiceImage(imageFile);
+      }
+
+      const payload: any = {
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        unit: formData.unit,
+        display_price_type: formData.display_price_type,
+        image_url: uploadedImageUrl,
+        is_active: formData.is_active,
+      };
+
+      if (formData.display_price_type === 'single') {
+        payload.base_price = parseFloat(formData.base_price);
+        payload.min_price = null;
+        payload.max_price = null;
+      } else {
+        payload.min_price = parseFloat(formData.min_price);
+        payload.max_price = parseFloat(formData.max_price);
+        payload.base_price = parseFloat(formData.min_price); // Set base_price to min for backward compatibility
+      }
+
       const response = await fetch("/api/services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          base_price: parseFloat(formData.base_price),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -113,13 +147,37 @@ export default function ServicesPage() {
     if (!selectedService) return;
 
     try {
+      let uploadedImageUrl = formData.image_url;
+
+      // Upload new image if selected
+      if (imageFile) {
+        uploadedImageUrl = await uploadServiceImage(imageFile);
+      }
+
+      const payload: any = {
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        unit: formData.unit,
+        display_price_type: formData.display_price_type,
+        image_url: uploadedImageUrl,
+        is_active: formData.is_active,
+      };
+
+      if (formData.display_price_type === 'single') {
+        payload.base_price = parseFloat(formData.base_price);
+        payload.min_price = null;
+        payload.max_price = null;
+      } else {
+        payload.min_price = parseFloat(formData.min_price);
+        payload.max_price = parseFloat(formData.max_price);
+        payload.base_price = parseFloat(formData.min_price); // Set base_price to min for backward compatibility
+      }
+
       const response = await fetch(`/api/services/${selectedService.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          base_price: parseFloat(formData.base_price),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -155,10 +213,16 @@ export default function ServicesPage() {
       name: service.name,
       description: service.description || "",
       category: service.category || "",
+      display_price_type: service.display_price_type || 'single',
       base_price: service.base_price.toString(),
+      min_price: service.min_price?.toString() || "",
+      max_price: service.max_price?.toString() || "",
       unit: service.unit || "",
+      image_url: service.image_url || "",
       is_active: service.is_active,
     });
+    setImagePreview(service.image_url || "");
+    setImageFile(null);
     setShowEditModal(true);
   };
 
@@ -167,16 +231,51 @@ export default function ServicesPage() {
       name: "",
       description: "",
       category: "",
+      display_price_type: "single",
       base_price: "",
+      min_price: "",
+      max_price: "",
       unit: "",
+      image_url: "",
       is_active: true,
     });
+    setImageFile(null);
+    setImagePreview("");
+  };
+
+  const uploadServiceImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/services/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image');
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
       </div>
     );
   }
@@ -204,7 +303,7 @@ export default function ServicesPage() {
             resetForm();
             setShowAddModal(true);
           }}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Add Service
@@ -239,8 +338,8 @@ export default function ServicesPage() {
           <h3 className="text-gray-600 text-sm font-semibold mb-2">
             Average Price
           </h3>
-          <p className="text-3xl font-bold text-purple-600">
-            ${services.length > 0 
+          <p className="text-3xl font-bold text-teal-600">
+            RWF {services.length > 0 
               ? Math.round(services.reduce((sum, s) => sum + s.base_price, 0) / services.length) 
               : 0}
           </p>
@@ -256,7 +355,7 @@ export default function ServicesPage() {
             placeholder="Search services by name or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
           />
         </div>
       </div>
@@ -268,22 +367,31 @@ export default function ServicesPage() {
             key={service.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
           >
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6">
-              <div className="flex items-start justify-between">
-                <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-white text-sm font-semibold">
-                  {service.category || "Uncategorized"}
-                </div>
-                <button
-                  onClick={() => toggleServiceStatus(service.id)}
-                  className="text-white hover:scale-110 transition"
-                >
-                  {service.is_active ? (
-                    <ToggleRight className="w-8 h-8" />
-                  ) : (
-                    <ToggleLeft className="w-8 h-8" />
-                  )}
-                </button>
+            {/* Service Image */}
+            {service.image_url && (
+              <div className="relative h-48 w-full bg-gray-100">
+                <img
+                  src={service.image_url}
+                  alt={service.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
+            )}
+
+            <div className="p-6 pb-0 flex items-center justify-between">
+              <div className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-sm font-semibold">
+                {service.category || "Uncategorized"}
+              </div>
+              <button
+                onClick={() => toggleServiceStatus(service.id)}
+                className="text-teal-600 hover:scale-110 transition"
+              >
+                {service.is_active ? (
+                  <ToggleRight className="w-8 h-8" />
+                ) : (
+                  <ToggleLeft className="w-8 h-8" />
+                )}
+              </button>
             </div>
 
             <div className="p-6">
@@ -308,10 +416,12 @@ export default function ServicesPage() {
 
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-sm">Base Price</span>
-                  <span className="font-bold text-indigo-600 text-lg flex items-center gap-1">
+                  <span className="text-gray-600 text-sm">Price</span>
+                  <span className="font-bold text-teal-600 text-lg flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    {service.base_price}
+                    {service.display_price_type === 'range' && service.min_price && service.max_price
+                      ? `${service.min_price} - ${service.max_price}`
+                      : service.base_price}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -325,7 +435,7 @@ export default function ServicesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => openEditModal(service)}
-                  className="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition font-medium flex items-center justify-center gap-2"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
@@ -354,6 +464,8 @@ export default function ServicesPage() {
           title="Add New Service"
           formData={formData}
           setFormData={setFormData}
+          imagePreview={imagePreview}
+          onImageChange={handleImageChange}
           onSubmit={handleAddService}
           onClose={() => {
             setShowAddModal(false);
@@ -368,6 +480,8 @@ export default function ServicesPage() {
           title="Edit Service"
           formData={formData}
           setFormData={setFormData}
+          imagePreview={imagePreview}
+          onImageChange={handleImageChange}
           onSubmit={handleEditService}
           onClose={() => {
             setShowEditModal(false);
@@ -384,12 +498,16 @@ function ServiceModal({
   title,
   formData,
   setFormData,
+  imagePreview,
+  onImageChange,
   onSubmit,
   onClose,
 }: {
   title: string;
   formData: any;
   setFormData: any;
+  imagePreview: string;
+  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
 }) {
@@ -418,7 +536,7 @@ function ServiceModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="e.g., Home Fumigation"
             />
           </div>
@@ -433,9 +551,31 @@ function ServiceModal({
                 setFormData({ ...formData, description: e.target.value })
               }
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="Brief description of the service"
             />
+          </div>
+
+          {/* Service Image Upload */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Service Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onImageChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+            />
+            {imagePreview && (
+              <div className="mt-3">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -449,14 +589,67 @@ function ServiceModal({
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="e.g., Fumigation"
               />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Base Price * ($)
+                Unit
+              </label>
+              <input
+                type="text"
+                value={formData.unit}
+                onChange={(e) =>
+                  setFormData({ ...formData, unit: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                placeholder="e.g., per sqm, per hour"
+              />
+            </div>
+          </div>
+
+          {/* Price Type Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Price Display Type *
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="display_price_type"
+                  value="single"
+                  checked={formData.display_price_type === 'single'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, display_price_type: e.target.value })
+                  }
+                  className="w-4 h-4 text-teal-600"
+                />
+                <span className="text-sm text-gray-700">Fixed Price</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="display_price_type"
+                  value="range"
+                  checked={formData.display_price_type === 'range'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, display_price_type: e.target.value })
+                  }
+                  className="w-4 h-4 text-teal-600"
+                />
+                <span className="text-sm text-gray-700">Price Range</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Conditional Price Input */}
+          {formData.display_price_type === 'single' ? (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Base Price * (RWF)
               </label>
               <input
                 type="number"
@@ -466,26 +659,46 @@ function ServiceModal({
                 onChange={(e) =>
                   setFormData({ ...formData, base_price: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="0.00"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Unit
-            </label>
-            <input
-              type="text"
-              value={formData.unit}
-              onChange={(e) =>
-                setFormData({ ...formData, unit: e.target.value })
-              }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-              placeholder="e.g., per sqm, per hour, per service"
-            />
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Min Price * (RWF)
+                </label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.min_price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, min_price: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                  placeholder="10000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Max Price * (RWF)
+                </label>
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  value={formData.max_price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, max_price: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                  placeholder="32000"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <input
@@ -495,7 +708,7 @@ function ServiceModal({
               onChange={(e) =>
                 setFormData({ ...formData, is_active: e.target.checked })
               }
-              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+              className="w-5 h-5 text-teal-600 rounded focus:ring-teal-500"
             />
             <label htmlFor="is_active" className="text-sm font-semibold text-gray-700">
               Active (visible to customers)
@@ -512,7 +725,7 @@ function ServiceModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium"
             >
               {title.includes("Add") ? "Add Service" : "Save Changes"}
             </button>
