@@ -386,7 +386,7 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#28A8AC' }} />
       </div>
     );
   }
@@ -397,7 +397,10 @@ export default function InvoicesPage() {
         <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Create Invoice
@@ -472,7 +475,7 @@ export default function InvoicesPage() {
               placeholder="Search by invoice number, customer, or job..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
 
@@ -482,9 +485,10 @@ export default function InvoicesPage() {
               onClick={() => setFilterStatus("all")}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 filterStatus === "all"
-                  ? "bg-indigo-600 text-white"
+                  ? "text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={filterStatus === "all" ? { backgroundColor: '#28A8AC' } : {}}
             >
               All
             </button>
@@ -602,7 +606,10 @@ export default function InvoicesPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleViewInvoice(invoice)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-2 rounded-lg transition"
+                          style={{ color: '#28A8AC' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor='rgba(40, 168, 172, 0.1)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
                           title="View Invoice"
                         >
                           <Eye className="w-4 h-4" />
@@ -672,7 +679,7 @@ export default function InvoicesPage() {
                   required
                   value={formData.job_id}
                   onChange={(e) => setFormData({ ...formData, job_id: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="">Select a job</option>
                   {jobs.map((job) => (
@@ -696,7 +703,7 @@ export default function InvoicesPage() {
                   min="0"
                   value={formData.total_amount}
                   onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>
@@ -711,7 +718,7 @@ export default function InvoicesPage() {
                   min="0"
                   value={formData.tax_amount}
                   onChange={(e) => setFormData({ ...formData, tax_amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>
@@ -726,7 +733,7 @@ export default function InvoicesPage() {
                   min="0"
                   value={formData.discount_amount}
                   onChange={(e) => setFormData({ ...formData, discount_amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>
@@ -740,7 +747,7 @@ export default function InvoicesPage() {
                   required
                   value={formData.due_date}
                   onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 />
               </div>
               <div className="flex gap-3 pt-4">
@@ -753,7 +760,10 @@ export default function InvoicesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                  style={{ backgroundColor: '#28A8AC' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
                 >
                   Create Invoice
                 </button>
@@ -882,7 +892,10 @@ export default function InvoicesPage() {
                       handleMarkPaid(selectedInvoice.id);
                       setShowViewModal(false);
                     }}
-                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                    className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                    style={{ backgroundColor: '#28A8AC' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
                   >
                     Mark as Paid
                   </button>
@@ -912,7 +925,7 @@ export default function InvoicesPage() {
                 <div className="text-sm text-gray-600">Invoice</div>
                 <div className="text-lg font-bold text-gray-900">{selectedInvoice.invoice_number}</div>
                 <div className="text-sm text-gray-600 mt-2">Total Amount</div>
-                <div className="text-2xl font-bold text-indigo-600">
+                <div className="text-2xl font-bold" style={{ color: '#28A8AC' }}>
                   RWF {(selectedInvoice.final_amount || selectedInvoice.total_amount).toFixed(2)}
                 </div>
               </div>
@@ -929,7 +942,7 @@ export default function InvoicesPage() {
                   max={selectedInvoice.final_amount || selectedInvoice.total_amount}
                   value={paymentData.amount}
                   onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="0.00"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -945,7 +958,7 @@ export default function InvoicesPage() {
                   required
                   value={paymentData.payment_method}
                   onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="cash">Cash</option>
                   <option value="credit_card">Credit Card</option>
@@ -966,7 +979,7 @@ export default function InvoicesPage() {
                   required={paymentData.payment_method === 'bank_transfer' || paymentData.payment_method === 'check'}
                   value={paymentData.transaction_reference}
                   onChange={(e) => setPaymentData({ ...paymentData, transaction_reference: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="Transaction ID, Check #, etc."
                 />
               </div>
@@ -979,7 +992,7 @@ export default function InvoicesPage() {
                   value={paymentData.notes}
                   onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="Additional notes about this payment..."
                 />
               </div>

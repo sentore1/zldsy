@@ -197,7 +197,7 @@ export default function InventoryPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#28A8AC' }}></div>
       </div>
     );
   }
@@ -226,7 +226,10 @@ export default function InventoryPage() {
             resetForm();
             setShowAddModal(true);
           }}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Add Item
@@ -238,7 +241,7 @@ export default function InventoryPage() {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-600 text-sm font-semibold">Total Items</h3>
-            <Package className="w-5 h-5 text-indigo-600" />
+            <Package className="w-5 h-5" style={{ color: '#28A8AC' }} />
           </div>
           <p className="text-3xl font-bold text-gray-900">{inventory.length}</p>
         </div>
@@ -270,9 +273,9 @@ export default function InventoryPage() {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-600 text-sm font-semibold">Categories</h3>
-            <Package className="w-5 h-5 text-purple-600" />
+            <Package className="w-5 h-5" style={{ color: '#28A8AC' }} />
           </div>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold" style={{ color: '#28A8AC' }}>
             {categories.length}
           </p>
         </div>
@@ -306,7 +309,7 @@ export default function InventoryPage() {
               placeholder="Search by name or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
           <div className="flex gap-2">
@@ -314,9 +317,10 @@ export default function InventoryPage() {
               onClick={() => setFilterCategory("all")}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 filterCategory === "all"
-                  ? "bg-indigo-600 text-white"
+                  ? "text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={filterCategory === "all" ? { backgroundColor: '#28A8AC' } : {}}
             >
               All
             </button>
@@ -326,9 +330,10 @@ export default function InventoryPage() {
                 onClick={() => setFilterCategory(category)}
                 className={`px-4 py-2 rounded-lg font-medium transition ${
                   filterCategory === category
-                    ? "bg-indigo-600 text-white"
+                    ? "text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
+                style={filterCategory === category ? { backgroundColor: '#28A8AC' } : {}}
               >
                 {category}
               </button>
@@ -377,12 +382,12 @@ export default function InventoryPage() {
                           className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                             isLowStock
                               ? "bg-orange-100"
-                              : "bg-indigo-100"
+                              : "bg-teal-100"
                           }`}
                         >
                           <Package
                             className={`w-5 h-5 ${
-                              isLowStock ? "text-orange-600" : "text-indigo-600"
+                              isLowStock ? "text-orange-600" : "text-teal-600"
                             }`}
                           />
                         </div>
@@ -442,7 +447,10 @@ export default function InventoryPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openEditModal(item)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-2 rounded-lg transition"
+                          style={{ color: '#28A8AC' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor='rgba(40, 168, 172, 0.1)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -541,7 +549,7 @@ export default function InventoryPage() {
                   step="0.01"
                   value={restockQuantity}
                   onChange={(e) => setRestockQuantity(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="Enter quantity to add"
                 />
                 {restockQuantity && (
@@ -616,7 +624,7 @@ function InventoryModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="e.g., Cleaning Solution"
             />
           </div>
@@ -633,7 +641,7 @@ function InventoryModal({
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="e.g., Materials"
               />
             </div>
@@ -649,7 +657,7 @@ function InventoryModal({
                 onChange={(e) =>
                   setFormData({ ...formData, unit: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="e.g., Liters, Pieces"
               />
             </div>
@@ -718,7 +726,10 @@ function InventoryModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+              style={{ backgroundColor: '#28A8AC' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
             >
               {title.includes("Add") ? "Add Item" : "Save Changes"}
             </button>

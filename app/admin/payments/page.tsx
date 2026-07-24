@@ -250,7 +250,7 @@ export default function PaymentsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#28A8AC' }}></div>
       </div>
     );
   }
@@ -261,7 +261,10 @@ export default function PaymentsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
         <button
           onClick={() => setShowRecordModal(true)}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Record Payment
@@ -286,7 +289,7 @@ export default function PaymentsPage() {
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">Average Payment</h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold" style={{ color: '#28A8AC' }}>
             RWF {payments.length > 0 ? (totalRevenue / payments.length).toFixed(2) : '0.00'}
           </p>
         </div>
@@ -303,7 +306,7 @@ export default function PaymentsPage() {
               placeholder="Search by invoice, transaction, or customer..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
 
@@ -316,7 +319,7 @@ export default function PaymentsPage() {
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="From"
               />
               <span className="text-gray-500">to</span>
@@ -324,7 +327,7 @@ export default function PaymentsPage() {
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="To"
               />
               {(dateRange.from || dateRange.to) && (
@@ -343,7 +346,7 @@ export default function PaymentsPage() {
               <select
                 value={paymentMethodFilter}
                 onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               >
                 <option value="all">All Methods</option>
                 <option value="credit_card">Credit Card</option>
@@ -400,7 +403,10 @@ export default function PaymentsPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleViewDetails(payment)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          className="p-2 rounded-lg transition"
+                          style={{ color: '#28A8AC' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor='rgba(40, 168, 172, 0.1)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
@@ -458,7 +464,7 @@ export default function PaymentsPage() {
                       amount: invoice ? invoice.final_amount.toString() : ""
                     });
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="">Select an invoice</option>
                   {invoices.map((invoice) => (
@@ -480,7 +486,7 @@ export default function PaymentsPage() {
                   min="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="0.00"
                 />
               </div>
@@ -493,7 +499,7 @@ export default function PaymentsPage() {
                   required
                   value={formData.payment_method}
                   onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="credit_card">Credit Card</option>
                   <option value="cash">Cash</option>
@@ -511,7 +517,7 @@ export default function PaymentsPage() {
                   required
                   value={formData.transaction_reference}
                   onChange={(e) => setFormData({ ...formData, transaction_reference: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="e.g., CC-TX-20240101-001"
                 />
               </div>
@@ -525,7 +531,7 @@ export default function PaymentsPage() {
                   required
                   value={formData.payment_date}
                   onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 />
               </div>
 
@@ -536,7 +542,7 @@ export default function PaymentsPage() {
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   rows={3}
                   placeholder="Additional notes about this payment..."
                 />
@@ -552,7 +558,10 @@ export default function PaymentsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                  style={{ backgroundColor: '#28A8AC' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
                 >
                   Record Payment
                 </button>
@@ -703,7 +712,7 @@ function PaymentMethodBadge({ method }: { method: string }) {
   const config: Record<string, { color: string }> = {
     credit_card: { color: "bg-blue-100 text-blue-800" },
     cash: { color: "bg-green-100 text-green-800" },
-    bank_transfer: { color: "bg-purple-100 text-purple-800" },
+    bank_transfer: { color: "bg-teal-100 text-teal-800" },
     check: { color: "bg-gray-100 text-gray-800" },
   };
 

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Loader2, FileText } from "lucide-react";
+import { ArrowRight, Loader2, FileText, Wrench } from "lucide-react";
 import QuickBookingModal from "@/components/QuickBookingModal";
 
 // Format currency for better readability
@@ -73,15 +72,8 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3 relative z-10">
-              <div className="bg-white p-2 rounded relative z-10">
-                <Image
-                  src="/logo.png"
-                  alt="Service Portal"
-                  width={48}
-                  height={48}
-                  className="h-12 w-auto"
-                  priority
-                />
+              <div className="p-2 rounded relative z-10" style={{ backgroundColor: '#005555' }}>
+                <Wrench className="h-8 w-8 text-white" />
               </div>
               <span className="text-xl font-semibold text-gray-900">
                 Service Portal
@@ -95,10 +87,10 @@ export default function Home() {
                 Track Order
               </Link>
               <Link
-                href="/admin"
+                href="/login"
                 className="text-sm px-4 py-2 text-white rounded transition" style={{ backgroundColor: '#005555' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor='#145456')} onMouseLeave={e => (e.currentTarget.style.backgroundColor='#005555')}
               >
-                Admin
+                Login
               </Link>
             </nav>
           </div>
@@ -207,10 +199,10 @@ export default function Home() {
                 Track Order
               </Link>
               <Link
-                href="/admin"
+                href="/login"
                 className="text-sm text-gray-600 hover:text-gray-900 transition"
               >
-                Admin Login
+                Login
               </Link>
             </div>
           </div>

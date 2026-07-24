@@ -90,7 +90,10 @@ export default function ServicesPage() {
         <h1 className="text-3xl font-bold text-gray-900">Services</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Add Service
@@ -125,7 +128,7 @@ export default function ServicesPage() {
           <h3 className="text-gray-600 text-sm font-semibold mb-2">
             Average Price
           </h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold" style={{ color: '#28A8AC' }}>
             RWF {Math.round(services.reduce((sum, s) => sum + s.basePrice, 0) / services.length)}
           </p>
         </div>
@@ -140,7 +143,7 @@ export default function ServicesPage() {
             placeholder="Search services by name or category..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
           />
         </div>
       </div>
@@ -152,7 +155,7 @@ export default function ServicesPage() {
             key={service.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
           >
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6">
+            <div className="p-6" style={{ background: 'linear-gradient(to bottom right, #28A8AC, #09ACAD)' }}>
               <div className="flex items-start justify-between">
                 <div className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-white text-sm font-semibold">
                   {service.category}
@@ -193,7 +196,7 @@ export default function ServicesPage() {
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600 text-sm">Base Price</span>
-                  <span className="font-bold text-indigo-600 text-lg flex items-center gap-1">
+                  <span className="font-bold text-lg flex items-center gap-1" style={{ color: '#28A8AC' }}>
                     <DollarSign className="w-4 h-4" />
                     {service.basePrice}
                   </span>

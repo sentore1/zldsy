@@ -88,7 +88,7 @@ export default function SettingsPage() {
                 type="email"
                 value={settings.companyEmail}
                 onChange={(e) => setSettings({...settings, companyEmail: e.target.value})}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               />
             </div>
           </div>

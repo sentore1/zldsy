@@ -88,13 +88,16 @@ export default function TrackServicePage() {
                 value={bookingId}
                 onChange={(e) => setBookingId(e.target.value)}
                 placeholder="Enter your booking number or phone number"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 required
               />
             </div>
             <button
               type="submit"
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+              className="px-8 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+              style={{ backgroundColor: '#28A8AC' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
             >
               <Search className="w-5 h-5" />
               Track
@@ -110,10 +113,10 @@ export default function TrackServicePage() {
         {tracking && (
           <div className="space-y-8">
             {/* Service Info Card */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <div className="bg-gradient-to-r rounded-xl shadow-lg p-6 text-white" style={{ backgroundImage: 'linear-gradient(to right, #28A8AC, #09ACAD)' }}>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-indigo-100 text-sm mb-1">Booking Number</p>
+                  <p className="text-white text-opacity-80 text-sm mb-1">Booking Number</p>
                   <h2 className="text-2xl font-bold">
                     {tracking.bookingNumber}
                   </h2>
@@ -122,15 +125,15 @@ export default function TrackServicePage() {
               </div>
               <div className="grid md:grid-cols-3 gap-4 mt-6">
                 <div>
-                  <p className="text-indigo-100 text-sm">Service</p>
+                  <p className="text-white text-opacity-80 text-sm">Service</p>
                   <p className="font-semibold">{tracking.service}</p>
                 </div>
                 <div>
-                  <p className="text-indigo-100 text-sm">Scheduled Date</p>
+                  <p className="text-white text-opacity-80 text-sm">Scheduled Date</p>
                   <p className="font-semibold">{tracking.scheduledDate}</p>
                 </div>
                 <div>
-                  <p className="text-indigo-100 text-sm">Customer</p>
+                  <p className="text-white text-opacity-80 text-sm">Customer</p>
                   <p className="font-semibold">{tracking.customer}</p>
                 </div>
               </div>
@@ -148,7 +151,7 @@ export default function TrackServicePage() {
                     {index < tracking.timeline.length - 1 && (
                       <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200">
                         {item.completed && (
-                          <div className="w-full bg-indigo-600 h-full" />
+                          <div className="w-full h-full" style={{ backgroundColor: '#28A8AC' }} />
                         )}
                       </div>
                     )}
@@ -159,9 +162,13 @@ export default function TrackServicePage() {
                         <div
                           className={`w-12 h-12 rounded-full flex items-center justify-center ${
                             item.current
-                              ? "bg-indigo-600 ring-4 ring-indigo-100"
-                              : "bg-indigo-600"
+                              ? "ring-4"
+                              : ""
                           }`}
+                          style={{ 
+                            backgroundColor: '#28A8AC',
+                            ...(item.current && { boxShadow: '0 0 0 4px rgba(40, 168, 172, 0.2)' })
+                          }}
                         >
                           <CheckCircle className="w-6 h-6 text-white" />
                         </div>
@@ -183,7 +190,7 @@ export default function TrackServicePage() {
                       </h4>
                       <p className="text-sm text-gray-600">{item.date}</p>
                       {item.current && (
-                        <p className="text-sm text-indigo-600 font-medium mt-1">
+                        <p className="text-sm font-medium mt-1" style={{ color: '#28A8AC' }}>
                           Current Status
                         </p>
                       )}
@@ -230,7 +237,7 @@ export default function TrackServicePage() {
                 <div className="space-y-3">
                   {tracking.assignedStaff.map((staff: any, index: number) => (
                     <div key={index} className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{ backgroundColor: '#28A8AC' }}>
                         {staff.name
                           .split(" ")
                           .map((n: string) => n[0])
@@ -251,7 +258,7 @@ export default function TrackServicePage() {
             {/* Service Location */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-indigo-600" />
+                <MapPin className="w-5 h-5" style={{ color: '#28A8AC' }} />
                 Service Location
               </h4>
               <p className="text-gray-700">{tracking.address}</p>
@@ -259,7 +266,12 @@ export default function TrackServicePage() {
 
             {/* Action Buttons */}
             <div className="flex gap-4">
-              <button className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
+              <button 
+                className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                style={{ backgroundColor: '#28A8AC' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
+              >
                 Contact Support
               </button>
               <button className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
@@ -290,7 +302,7 @@ function StatusBadge({ status }: { status: string }) {
   const statusConfig: Record<string, { label: string; color: string }> = {
     pending: { label: "Pending", color: "bg-yellow-500" },
     scheduled: { label: "Scheduled", color: "bg-blue-500" },
-    in_progress: { label: "In Progress", color: "bg-purple-500" },
+    in_progress: { label: "In Progress", color: "bg-teal-500" },
     completed: { label: "Completed", color: "bg-green-500" },
     cancelled: { label: "Cancelled", color: "bg-red-500" },
   };

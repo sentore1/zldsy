@@ -142,7 +142,7 @@ export default function CustomersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#28A8AC' }}></div>
       </div>
     );
   }
@@ -177,7 +177,10 @@ export default function CustomersPage() {
             resetForm();
             setShowAddModal(true);
           }}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Add Customer
@@ -222,7 +225,7 @@ export default function CustomersPage() {
           <h3 className="text-gray-600 text-sm font-semibold mb-2">
             Today
           </h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold" style={{ color: '#28A8AC' }}>
             {customers.filter(c => {
               const created = new Date(c.created_at || '');
               const today = new Date();
@@ -241,7 +244,7 @@ export default function CustomersPage() {
             placeholder="Search customers by name, email, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
           />
         </div>
       </div>
@@ -280,7 +283,7 @@ export default function CustomersPage() {
                 <tr key={customer.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" style={{ backgroundColor: '#28A8AC' }}>
                         {customer.name
                           .split(" ")
                           .map((n) => n[0])
@@ -325,7 +328,10 @@ export default function CustomersPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEditModal(customer)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                        className="p-2 rounded-lg transition"
+                        style={{ color: '#28A8AC' }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor='rgba(40, 168, 172, 0.1)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor='transparent')}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -420,7 +426,7 @@ function CustomerModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="e.g., John Doe"
             />
           </div>
@@ -436,7 +442,7 @@ function CustomerModal({
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="customer@example.com"
             />
           </div>
@@ -452,7 +458,7 @@ function CustomerModal({
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="+1 234 567 8900"
             />
           </div>
@@ -467,7 +473,7 @@ function CustomerModal({
                 setFormData({ ...formData, address: e.target.value })
               }
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="Full address"
             />
           </div>
@@ -482,7 +488,10 @@ function CustomerModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+              style={{ backgroundColor: '#28A8AC' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
             >
               {title.includes("Add") ? "Add Customer" : "Save Changes"}
             </button>

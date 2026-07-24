@@ -47,21 +47,21 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="mb-8">
-            <Link href="/" className="flex items-center gap-3 relative z-10">
-              <div className="bg-white p-2 rounded relative z-10">
+          <div className="mb-8 text-center">
+            <Link href="/" className="inline-block">
+              <div className="bg-white p-2 rounded mx-auto mb-2">
                 <Image
                   src="/logo.png"
-                  alt="Service Portal"
-                  width={48}
-                  height={48}
-                  className="h-12 w-auto"
+                  alt="ZLD System"
+                  width={64}
+                  height={64}
+                  className="h-16 w-auto"
                   priority
                 />
               </div>
-              <span className="text-2xl font-semibold text-gray-900">
-                Service Portal
-              </span>
+              <h1 className="text-2xl font-bold text-blue-700">
+                ZLD System
+              </h1>
             </Link>
           </div>
 
@@ -165,7 +165,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-1 bg-gray-50 items-center justify-center p-8">
         <div className="max-w-md text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Service Management System
+            ZLD System
           </h2>
           <p className="text-lg text-gray-600">
             Manage your service business efficiently with our comprehensive

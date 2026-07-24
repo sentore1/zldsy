@@ -196,7 +196,7 @@ export default function JobsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#28A8AC' }}></div>
       </div>
     );
   }
@@ -223,7 +223,10 @@ export default function JobsPage() {
             resetForm();
             setShowCreateModal(true);
           }}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+          style={{ backgroundColor: '#28A8AC' }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
         >
           <Plus className="w-5 h-5" />
           Create Job
@@ -250,7 +253,7 @@ export default function JobsPage() {
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">In Progress</h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold" style={{ color: '#28A8AC' }}>
             {getStatusCount("in_progress")}
           </p>
         </div>
@@ -272,7 +275,7 @@ export default function JobsPage() {
               placeholder="Search by job number, customer, or service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
 
@@ -281,9 +284,10 @@ export default function JobsPage() {
               onClick={() => setFilterStatus("all")}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 filterStatus === "all"
-                  ? "bg-indigo-600 text-white"
+                  ? "text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={filterStatus === "all" ? { backgroundColor: '#28A8AC' } : {}}
             >
               All
             </button>
@@ -311,9 +315,10 @@ export default function JobsPage() {
               onClick={() => setFilterStatus("in_progress")}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 filterStatus === "in_progress"
-                  ? "bg-purple-600 text-white"
+                  ? "text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={filterStatus === "in_progress" ? { backgroundColor: '#28A8AC' } : {}}
             >
               In Progress
             </button>
@@ -338,10 +343,10 @@ export default function JobsPage() {
             key={job.id}
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
           >
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
+            <div className="bg-gradient-to-r p-4" style={{ backgroundImage: 'linear-gradient(to right, #28A8AC, #09ACAD)' }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-indigo-100 text-sm">Job Number</p>
+                  <p className="text-white text-opacity-80 text-sm">Job Number</p>
                   <h3 className="text-xl font-bold text-white">{job.job_number}</h3>
                 </div>
                 <StatusBadge status={job.status} />
@@ -365,7 +370,7 @@ export default function JobsPage() {
 
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2 text-gray-700">
-                  <Calendar className="w-4 h-4 text-indigo-600" />
+                  <Calendar className="w-4 h-4" style={{ color: '#28A8AC' }} />
                   <span>
                     {job.scheduled_date
                       ? new Date(job.scheduled_date).toLocaleDateString()
@@ -405,7 +410,7 @@ export default function JobsPage() {
                   <select
                     value={job.status}
                     onChange={(e) => handleUpdateStatus(job.id, e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   >
                     <option value="pending">Pending</option>
                     <option value="scheduled">Scheduled</option>
@@ -464,7 +469,7 @@ export default function JobsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, booking_id: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="">Select Confirmed Booking</option>
                   {bookings.map((booking) => (
@@ -491,7 +496,7 @@ export default function JobsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, scheduled_date: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   />
                 </div>
 
@@ -505,7 +510,7 @@ export default function JobsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, start_time: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -519,7 +524,7 @@ export default function JobsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, weather_condition: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 >
                   <option value="dry">Dry</option>
                   <option value="wet">Wet</option>
@@ -537,7 +542,7 @@ export default function JobsPage() {
                     setFormData({ ...formData, notes: e.target.value })
                   }
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   placeholder="Job notes..."
                 />
               </div>
@@ -555,7 +560,10 @@ export default function JobsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                  style={{ backgroundColor: '#28A8AC' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
                 >
                   Create Job
                 </button>
@@ -572,7 +580,7 @@ function StatusBadge({ status }: { status: string }) {
   const statusConfig: Record<string, { label: string; color: string }> = {
     pending: { label: "Pending", color: "bg-yellow-500" },
     scheduled: { label: "Scheduled", color: "bg-blue-500" },
-    in_progress: { label: "In Progress", color: "bg-purple-500" },
+    in_progress: { label: "In Progress", color: "bg-teal-500" },
     completed: { label: "Completed", color: "bg-green-500" },
     cancelled: { label: "Cancelled", color: "bg-red-500" },
   };
