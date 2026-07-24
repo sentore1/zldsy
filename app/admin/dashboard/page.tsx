@@ -27,22 +27,23 @@ interface DashboardData {
   jobsByStatus: Record<string, number>;
   lowStockCount: number;
   lowStockItems: any[];
+  recentJobs?: any[];
 }
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     fetchDashboardData();
-    fetchRecentJobs();
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch("/api/reports/dashboard");
+      setLoading(true);
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/reports/dashboard?include_recent=true&start_date=${today}`);
       const result = await response.json();
       
       if (response.ok) {
@@ -57,24 +58,10 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchRecentJobs = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`/api/jobs?start_date=${today}`);
-      const result = await response.json();
-      
-      if (response.ok) {
-        setRecentJobs(result.jobs?.slice(0, 10) || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch recent jobs:", err);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent"></div>
       </div>
     );
   }
@@ -210,7 +197,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Jobs */}
-      {recentJobs.length > 0 && (
+      {data.recentJobs && data.recentJobs.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Recent Jobs
@@ -237,7 +224,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {recentJobs.map((job) => (
+                {data.recentJobs!.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {job.job_number}

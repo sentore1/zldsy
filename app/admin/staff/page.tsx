@@ -157,7 +157,7 @@ export default function StaffPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function StaffPage() {
             resetForm();
             setShowAddModal(true);
           }}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Add Staff Member
@@ -231,7 +231,7 @@ export default function StaffPage() {
           <h3 className="text-gray-600 text-sm font-semibold mb-2">
             Avg Rate
           </h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p className="text-3xl font-bold text-teal-600">
             RWF {staff.length > 0 ? (staff.reduce((sum, s) => sum + s.hourly_rate, 0) / staff.length).toFixed(0) : 0}
           </p>
         </div>
@@ -247,7 +247,7 @@ export default function StaffPage() {
               placeholder="Search by name, email, or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
           <div className="flex gap-2">
@@ -255,7 +255,7 @@ export default function StaffPage() {
               onClick={() => setFilterStatus("all")}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 filterStatus === "all"
-                  ? "bg-indigo-600 text-white"
+                  ? "bg-teal-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -293,9 +293,9 @@ export default function StaffPage() {
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
           >
             {/* Header */}
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6">
+            <div className="bg-teal-500 p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-teal-600 text-2xl font-bold shadow-lg">
                   {member.name
                     .split(" ")
                     .map((n) => n[0])
@@ -322,7 +322,7 @@ export default function StaffPage() {
                 </span>
               </div>
               <h3 className="text-xl font-bold text-white">{member.name}</h3>
-              <p className="text-indigo-100 text-sm">{member.role}</p>
+              <p className="text-teal-100 text-sm">{member.role}</p>
             </div>
 
             {/* Content */}
@@ -338,7 +338,7 @@ export default function StaffPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Hourly Rate</p>
-                  <p className="text-lg font-bold text-indigo-600 flex items-center gap-1">
+                  <p className="text-lg font-bold text-teal-600 flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
                     {member.hourly_rate}
                   </p>
@@ -355,7 +355,7 @@ export default function StaffPage() {
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => openEditModal(member)}
-                  className="flex-1 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition font-medium flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition font-medium flex items-center justify-center gap-2"
                 >
                   <Edit className="w-4 h-4" />
                   Edit
@@ -448,7 +448,7 @@ function StaffModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="e.g., John Doe"
             />
           </div>
@@ -465,7 +465,7 @@ function StaffModal({
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="staff@example.com"
               />
             </div>
@@ -481,7 +481,7 @@ function StaffModal({
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="+1 234 567 8900"
               />
             </div>
@@ -490,18 +490,21 @@ function StaffModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Role *
+                System Role *
               </label>
-              <input
-                type="text"
+              <select
                 required
                 value={formData.role}
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                placeholder="e.g., Technician"
-              />
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent bg-white"
+              >
+                <option value="">Select a role</option>
+                <option value="admin">Admin - Full system access</option>
+                <option value="manager">Manager - Manage customers, services, bookings, staff</option>
+                <option value="staff">Staff - View dashboard and manage assigned jobs</option>
+              </select>
             </div>
 
             <div>
@@ -516,7 +519,7 @@ function StaffModal({
                 onChange={(e) =>
                   setFormData({ ...formData, hourly_rate: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                 placeholder="25.00"
               />
             </div>
@@ -530,7 +533,7 @@ function StaffModal({
               onChange={(e) =>
                 setFormData({ ...formData, is_active: e.target.checked })
               }
-              className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+              className="w-5 h-5 text-teal-600 rounded focus:ring-teal-500"
             />
             <label htmlFor="is_active" className="text-sm font-semibold text-gray-700">
               Active (available for job assignments)
@@ -547,7 +550,7 @@ function StaffModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex-1 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium"
             >
               {title.includes("Add") ? "Add Staff" : "Save Changes"}
             </button>

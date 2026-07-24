@@ -263,7 +263,7 @@ export default function InventoryPage() {
             <TrendingDown className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-green-600">
-            ${totalValue.toFixed(2)}
+            RWF {totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
@@ -280,14 +280,14 @@ export default function InventoryPage() {
 
       {/* Low Stock Alert */}
       {lowStockItems.length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <div className="bg-[#41AEB4]/10 border border-[#41AEB4]/30 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-[#41AEB4] mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-orange-900 mb-1">
+              <h3 className="font-semibold text-[#41AEB4] mb-1">
                 Low Stock Alert
               </h3>
-              <p className="text-sm text-orange-800">
+              <p className="text-sm text-gray-700">
                 {lowStockItems.length} item(s) need restocking:{" "}
                 {lowStockItems.map((item) => item.name).join(", ")}
               </p>
@@ -418,12 +418,12 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">
-                        ${item.unit_cost.toFixed(2)}
+                        RWF {item.unit_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-bold text-green-600">
-                        ${(item.quantity * item.unit_cost).toFixed(2)}
+                        RWF {(item.quantity * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -675,7 +675,7 @@ function InventoryModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Unit Cost ($) *
+                Unit Cost (RWF) *
               </label>
               <input
                 type="number"

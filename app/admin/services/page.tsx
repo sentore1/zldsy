@@ -3,6 +3,16 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, DollarSign, ToggleLeft, ToggleRight, X } from "lucide-react";
 
+// Format currency for better readability
+function formatCurrency(amount: number): string {
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  } else if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  return amount.toString();
+}
+
 interface Service {
   id: string;
   name: string;
@@ -339,9 +349,9 @@ export default function ServicesPage() {
             Average Price
           </h3>
           <p className="text-3xl font-bold text-teal-600">
-            RWF {services.length > 0 
-              ? Math.round(services.reduce((sum, s) => sum + s.base_price, 0) / services.length) 
-              : 0}
+            {services.length > 0 
+              ? `${formatCurrency(Math.round(services.reduce((sum, s) => sum + s.base_price, 0) / services.length))} Rwf` 
+              : '0 Rwf'}
           </p>
         </div>
       </div>
@@ -420,8 +430,8 @@ export default function ServicesPage() {
                   <span className="font-bold text-teal-600 text-lg flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
                     {service.display_price_type === 'range' && service.min_price && service.max_price
-                      ? `${service.min_price} - ${service.max_price}`
-                      : service.base_price}
+                      ? `${formatCurrency(service.min_price)} - ${formatCurrency(service.max_price)} Rwf`
+                      : `${formatCurrency(service.base_price)} Rwf`}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

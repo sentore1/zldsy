@@ -20,14 +20,23 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log("🔐 Attempting login with email:", email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
+      console.error("❌ Login error:", error);
       setError(error.message);
       setLoading(false);
       return;
     }
 
+    console.log("✅ Login successful!", data);
+    console.log("🔄 Redirecting to /admin/dashboard...");
+    
+    // Wait a moment for the session to be set in cookies
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     router.push("/admin/dashboard");
     router.refresh();
   };
@@ -39,14 +48,15 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="bg-white p-1 rounded">
+            <Link href="/" className="flex items-center gap-3 relative z-10">
+              <div className="bg-white p-2 rounded relative z-10">
                 <Image
                   src="/logo.png"
                   alt="Service Portal"
-                  width={32}
-                  height={32}
-                  className="h-8 w-auto"
+                  width={48}
+                  height={48}
+                  className="h-12 w-auto"
+                  priority
                 />
               </div>
               <span className="text-2xl font-semibold text-gray-900">

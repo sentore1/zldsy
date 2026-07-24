@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2, CreditCard, Banknote } from "lucide-react";
 import Link from "next/link";
+import QRCode from "qrcode";
 
 interface Invoice {
   id: string;
@@ -54,10 +55,30 @@ export default function InvoicePage() {
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("cash");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [momoCode, setMomoCode] = useState<string>("");
+  const [momoQr, setMomoQr] = useState<string>("");
 
   useEffect(() => {
     fetchInvoice();
+    fetchMomoCode();
   }, [invoiceId]);
+
+  const fetchMomoCode = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      setMomoCode(data.settings?.momo_code || "");
+    } catch {}
+  };
+
+  const generateMomoQr = async (code: string, amount: number) => {
+    if (!code) return;
+    const ussd = `tel:*182*8*1*${code}*${Math.round(amount)}#`;
+    try {
+      const qr = await QRCode.toDataURL(ussd, { width: 200, margin: 1 });
+      setMomoQr(qr);
+    } catch {}
+  };
 
   const fetchInvoice = async () => {
     try {
@@ -67,7 +88,15 @@ export default function InvoicePage() {
       }
       const data = await response.json();
       setInvoice(data.invoice);
-      setPaymentAmount(data.invoice.balance_due.toString());
+      // Safely set payment amount with fallback
+      const balanceDue = data.invoice?.balance_due ?? 0;
+      setPaymentAmount(balanceDue.toString());
+      // Generate MoMo QR after invoice loads
+      const res = await fetch("/api/settings");
+      const settingsData = await res.json();
+      const code = settingsData.settings?.momo_code || "";
+      setMomoCode(code);
+      await generateMomoQr(code, balanceDue);
     } catch (err: any) {
       setError(err.message || "Failed to load invoice");
     } finally {
@@ -217,7 +246,7 @@ export default function InvoicePage() {
             <div>
               <p className="text-gray-600">Job Completed:</p>
               <p className="font-semibold">
-                {invoice.job.completion_date 
+                {invoice.job?.completion_date 
                   ? new Date(invoice.job.completion_date).toLocaleDateString()
                   : "In Progress"}
               </p>
@@ -234,19 +263,19 @@ export default function InvoicePage() {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-600">Service</p>
-              <p className="text-lg font-semibold">{invoice.job.booking.service.name}</p>
-              <p className="text-sm text-gray-600">{invoice.job.booking.service.description}</p>
+              <p className="text-lg font-semibold">{invoice.job?.booking?.service?.name || 'N/A'}</p>
+              <p className="text-sm text-gray-600">{invoice.job?.booking?.service?.description || ''}</p>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Category</p>
-                <p className="font-semibold">{invoice.job.booking.service.category}</p>
+                <p className="font-semibold">{invoice.job?.booking?.service?.category || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Service Date</p>
                 <p className="font-semibold flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-teal-600" />
-                  {new Date(invoice.job.scheduled_date).toLocaleDateString()}
+                  {invoice.job?.scheduled_date ? new Date(invoice.job.scheduled_date).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             </div>
@@ -264,17 +293,17 @@ export default function InvoicePage() {
               <User className="w-5 h-5 text-gray-400 mt-1" />
               <div>
                 <p className="text-sm text-gray-600">Name</p>
-                <p className="font-semibold">{invoice.job.booking.customer.name}</p>
+                <p className="font-semibold">{invoice.job?.booking?.customer?.name || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Phone className="w-5 h-5 text-gray-400 mt-1" />
               <div>
                 <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-semibold">{invoice.job.booking.customer.phone}</p>
+                <p className="font-semibold">{invoice.job?.booking?.customer?.phone || 'N/A'}</p>
               </div>
             </div>
-            {invoice.job.booking.customer.email && (
+            {invoice.job?.booking?.customer?.email && (
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-gray-400 mt-1" />
                 <div>
@@ -287,7 +316,7 @@ export default function InvoicePage() {
               <MapPin className="w-5 h-5 text-gray-400 mt-1" />
               <div>
                 <p className="text-sm text-gray-600">Address</p>
-                <p className="font-semibold">{invoice.job.booking.customer.address}</p>
+                <p className="font-semibold">{invoice.job?.booking?.customer?.address || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -302,52 +331,52 @@ export default function InvoicePage() {
           <div className="space-y-3">
             <div className="flex justify-between py-2 border-b border-gray-200">
               <span className="text-gray-600">Service Cost</span>
-              <span className="font-semibold">RWF {invoice.job.service_cost.toLocaleString()}</span>
+              <span className="font-semibold">RWF {(invoice.job?.service_cost ?? 0).toLocaleString()}</span>
             </div>
-            {invoice.job.materials_cost > 0 && (
+            {(invoice.job?.materials_cost ?? 0) > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Materials</span>
-                <span className="font-semibold">RWF {invoice.job.materials_cost.toLocaleString()}</span>
+                <span className="font-semibold">RWF {(invoice.job.materials_cost ?? 0).toLocaleString()}</span>
               </div>
             )}
-            {invoice.job.labor_cost > 0 && (
+            {(invoice.job?.labor_cost ?? 0) > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Labor</span>
-                <span className="font-semibold">RWF {invoice.job.labor_cost.toLocaleString()}</span>
+                <span className="font-semibold">RWF {(invoice.job.labor_cost ?? 0).toLocaleString()}</span>
               </div>
             )}
-            {invoice.job.equipment_cost > 0 && (
+            {(invoice.job?.equipment_cost ?? 0) > 0 && (
               <div className="flex justify-between py-2 border-b border-gray-200">
                 <span className="text-gray-600">Equipment</span>
-                <span className="font-semibold">RWF {invoice.job.equipment_cost.toLocaleString()}</span>
+                <span className="font-semibold">RWF {(invoice.job.equipment_cost ?? 0).toLocaleString()}</span>
               </div>
             )}
             <div className="flex justify-between py-2 border-b border-gray-200">
               <span className="text-gray-600">Subtotal</span>
-              <span className="font-semibold">RWF {invoice.subtotal.toLocaleString()}</span>
+              <span className="font-semibold">RWF {(invoice.subtotal ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-200">
               <span className="text-gray-600">Tax (18%)</span>
-              <span className="font-semibold">RWF {invoice.tax_amount.toLocaleString()}</span>
+              <span className="font-semibold">RWF {(invoice.tax_amount ?? 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between py-3 bg-gray-50 px-4 rounded-lg">
               <span className="text-lg font-bold text-gray-900">Total Amount</span>
               <span className="text-2xl font-bold text-gray-900">
-                RWF {invoice.total_amount.toLocaleString()}
+                RWF {(invoice.total_amount ?? 0).toLocaleString()}
               </span>
             </div>
-            {invoice.amount_paid > 0 && (
+            {(invoice.amount_paid ?? 0) > 0 && (
               <>
                 <div className="flex justify-between py-2 border-b border-gray-200">
                   <span className="text-gray-600">Amount Paid</span>
                   <span className="font-semibold text-green-600">
-                    -RWF {invoice.amount_paid.toLocaleString()}
+                    -RWF {(invoice.amount_paid ?? 0).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between py-3 bg-teal-50 px-4 rounded-lg">
                   <span className="text-lg font-bold text-gray-900">Balance Due</span>
                   <span className="text-2xl font-bold text-teal-600">
-                    RWF {invoice.balance_due.toLocaleString()}
+                    RWF {(invoice.balance_due ?? 0).toLocaleString()}
                   </span>
                 </div>
               </>
@@ -379,6 +408,25 @@ export default function InvoicePage() {
           </div>
         )}
 
+        {/* MoMo Payment QR */}
+        {momoQr && momoCode && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Pay with Mobile Money (MoMo)
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Scan with your phone camera to open the USSD payment code
+            </p>
+            <img src={momoQr} alt="MoMo QR Code" className="mx-auto w-48 h-48" />
+            <p className="text-sm font-mono mt-3 bg-gray-100 inline-block px-3 py-1 rounded">
+              *182*8*1*{momoCode}*{Math.round(invoice.balance_due ?? invoice.total_amount ?? 0)}#
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Amount: RWF {(invoice.balance_due ?? invoice.total_amount ?? 0).toLocaleString()}
+            </p>
+          </div>
+        )}
+
         {/* Payment Section */}
         {!isPaid && (
           <div className="bg-white rounded-lg shadow-lg p-6">
@@ -392,7 +440,7 @@ export default function InvoicePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {[
                     { value: "cash", label: "Cash", icon: Banknote },
                     { value: "card", label: "Card", icon: CreditCard },
@@ -401,11 +449,12 @@ export default function InvoicePage() {
                   ].map((method) => (
                     <label
                       key={method.value}
-                      className={`cursor-pointer border-2 rounded-lg p-4 flex flex-col items-center gap-2 transition ${
+                      className={`cursor-pointer rounded-lg p-2 flex flex-col items-center gap-1 transition ${
                         paymentMethod === method.value
-                          ? "border-teal-600 bg-teal-50"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "text-white"
+                          : "border-2 border-gray-200 hover:border-gray-300"
                       }`}
+                      style={paymentMethod === method.value ? { backgroundColor: '#29A4AB' } : {}}
                     >
                       <input
                         type="radio"
@@ -415,8 +464,8 @@ export default function InvoicePage() {
                         onChange={(e) => setPaymentMethod(e.target.value)}
                         className="sr-only"
                       />
-                      <method.icon className="w-6 h-6" />
-                      <span className="text-sm font-medium">{method.label}</span>
+                      <method.icon className="w-4 h-4" />
+                      <span className="text-xs font-medium">{method.label}</span>
                     </label>
                   ))}
                 </div>
@@ -430,7 +479,7 @@ export default function InvoicePage() {
                   type="number"
                   required
                   min="0"
-                  max={invoice.balance_due}
+                  max={invoice.balance_due ?? 0}
                   step="0.01"
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
@@ -438,7 +487,7 @@ export default function InvoicePage() {
                   placeholder="Enter amount"
                 />
                 <p className="text-sm text-gray-600 mt-1">
-                  Balance due: RWF {invoice.balance_due.toLocaleString()}
+                  Balance due: RWF {(invoice.balance_due ?? 0).toLocaleString()}
                 </p>
               </div>
 
@@ -461,8 +510,8 @@ export default function InvoicePage() {
               </button>
             </form>
 
-            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
+            <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: '#94D2D5' }}>
+              <p className="text-sm text-black">
                 <strong>Note:</strong> This is for recording manual payments. For online payment integration,
                 please contact our team or use the payment gateway options when available.
               </p>

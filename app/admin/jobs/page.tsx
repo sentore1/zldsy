@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Calendar, Users, MapPin, Sun, Cloud, CloudRain, X, FileText } from "lucide-react";
+import { Plus, Search, Calendar, Users, MapPin, Sun, Cloud, CloudRain, X, FileText, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Job {
   id: string;
@@ -36,6 +37,7 @@ interface Staff {
 }
 
 export default function JobsPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -388,6 +390,14 @@ export default function JobsPage() {
               </div>
 
               <div className="pt-4 border-t space-y-3">
+                <button
+                  onClick={() => router.push(`/admin/jobs/${job.id}`)}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  View Details & Costs
+                </button>
+                
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Update Status:

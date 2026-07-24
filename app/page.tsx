@@ -4,6 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Loader2, FileText } from "lucide-react";
+import QuickBookingModal from "@/components/QuickBookingModal";
+
+// Format currency for better readability
+function formatCurrency(amount: number): string {
+  if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  } else if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  return amount.toString();
+}
 
 interface Service {
   id: string;
@@ -23,6 +34,9 @@ export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [requestQuote, setRequestQuote] = useState(false);
 
   useEffect(() => {
     fetchServices();
@@ -55,17 +69,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
+      <header className="bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="bg-white p-1 rounded">
+            <Link href="/" className="flex items-center gap-3 relative z-10">
+              <div className="bg-white p-2 rounded relative z-10">
                 <Image
                   src="/logo.png"
                   alt="Service Portal"
-                  width={32}
-                  height={32}
-                  className="h-8 w-auto"
+                  width={48}
+                  height={48}
+                  className="h-12 w-auto"
+                  priority
                 />
               </div>
               <span className="text-xl font-semibold text-gray-900">
@@ -91,33 +106,35 @@ export default function Home() {
       </header>
 
       {/* Services Section */}
-      <section className="pb-16 md:pb-24 pt-8">
+      <section className="pb-12 pt-4">
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
-          <div className="max-w-2xl mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Our Services
-            </h2>
-            <p className="text-lg text-gray-600">
-              Choose from our range of professional services
-            </p>
-          </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded text-sm font-medium transition ${
+                    selectedCategory === category
+                      ? "text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                  style={selectedCategory === category ? { backgroundColor: '#005555' } : undefined}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-2 mb-12">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded text-sm font-medium transition ${
-                  selectedCategory === category
-                    ? "text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                style={selectedCategory === category ? { backgroundColor: '#005555' } : undefined}
-              >
-                {category}
-              </button>
-            ))}
+            <div className="text-left md:text-right">
+              <h2 className="text-2xl md:text-4xl font-extrabold mb-2" style={{ color: '#16797c' }}>
+                Our Services
+              </h2>
+              <p className="text-lg text-gray-600">
+                Choose from our range of professional services
+              </p>
+            </div>
           </div>
 
           {/* Services Grid */}
@@ -130,7 +147,7 @@ export default function Home() {
               <p className="text-gray-500">No services available</p>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredServices.map((service) => (
                 <ServiceCard key={service.id} service={service} />
               ))}
@@ -180,7 +197,7 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
-              © 2024 Service Portal. All rights reserved.
+              © 2026 Zld Service Portal. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link
@@ -206,16 +223,16 @@ export default function Home() {
 function ServiceCard({ service }: { service: Service }) {
   const getPriceDisplay = () => {
     if (service.display_price_type === 'range' && service.min_price && service.max_price) {
-      return `${service.min_price.toLocaleString()} - ${service.max_price.toLocaleString()}`;
+      return `${formatCurrency(service.min_price)} - ${formatCurrency(service.max_price)}`;
     }
-    return service.base_price.toLocaleString();
+    return formatCurrency(service.base_price);
   };
 
   return (
-    <div className="group border border-gray-200 rounded-lg hover:border-gray-300 transition overflow-hidden bg-white">
+    <div className="group border border-gray-200 rounded-lg hover:border-gray-300 transition overflow-hidden bg-white flex flex-col h-full">
       {/* Service Image */}
       {service.image_url && (
-        <div className="relative h-48 w-full bg-gray-100 overflow-hidden">
+        <div className="relative h-48 w-full bg-gray-100 overflow-hidden flex-shrink-0">
           <img
             src={service.image_url}
             alt={service.name}
@@ -224,29 +241,29 @@ function ServiceCard({ service }: { service: Service }) {
         </div>
       )}
       
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="p-4 flex flex-col flex-grow">
+        <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
-            <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded mb-3">
+            <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded mb-2">
               {service.category}
             </span>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">
               {service.name}
             </h3>
           </div>
         </div>
 
-        <p className="text-gray-600 mb-6 text-sm leading-relaxed min-h-[48px]">
+        <p className="text-gray-600 mb-4 text-sm leading-relaxed min-h-[40px]">
           {service.description}
         </p>
 
         <div className="flex items-end justify-between mb-4">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-gray-900">
-                RWF {getPriceDisplay()}
+              <span className="text-xl font-bold text-gray-900">
+                {getPriceDisplay()} <span className="text-sm font-normal text-gray-600">Rwf</span>
               </span>
-              <span className="text-sm text-gray-500">/ {service.unit}</span>
+              <span className="text-xs text-gray-500">/ {service.unit}</span>
             </div>
             {service.display_price_type === 'range' && (
               <span className="text-xs text-gray-500 mt-1 block">Price range based on requirements</span>
@@ -254,23 +271,23 @@ function ServiceCard({ service }: { service: Service }) {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto">
+          <Link
+            href={`/customer/booking?service=${service.id}&requestQuote=true`}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm rounded hover:bg-gray-50 transition"
+            style={{ color: '#28A8AC' }}
+          >
+            Get Quote
+            <FileText className="w-4 h-4" />
+          </Link>
+          
           <Link
             href={`/customer/booking?service=${service.id}`}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm rounded hover:opacity-90 transition"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 text-white text-sm rounded hover:scale-105 transition-transform duration-200"
             style={{ backgroundColor: '#28A8AC' }}
           >
             Book Now
             <ArrowRight className="w-4 h-4" />
-          </Link>
-          
-          <Link
-            href={`/customer/booking?service=${service.id}&requestQuote=true`}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-sm rounded hover:bg-gray-50 transition mb-2"
-            style={{ color: '#28A8AC' }}
-          >
-            Request Quote
-            <FileText className="w-4 h-4" />
           </Link>
         </div>
       </div>

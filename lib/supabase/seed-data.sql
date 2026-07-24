@@ -2,15 +2,15 @@
 -- Run this after schema.sql to populate your database with test data
 
 -- Insert Sample Services
-INSERT INTO services (name, description, base_price, unit, category, is_active) VALUES
-('Residential Fumigation', 'Complete fumigation service for residential properties including termite treatment', 150.00, 'per sqm', 'Fumigation', true),
-('Commercial Fumigation', 'Professional fumigation for commercial buildings and offices', 250.00, 'per sqm', 'Fumigation', true),
-('Pest Control - General', 'General pest control for common household pests', 80.00, 'per service', 'Pest Control', true),
-('Termite Treatment', 'Specialized termite inspection and treatment', 200.00, 'per service', 'Fumigation', true),
-('Rodent Control', 'Complete rodent elimination and prevention service', 120.00, 'per service', 'Pest Control', true),
-('Deep Cleaning Service', 'Professional deep cleaning for homes and offices', 100.00, 'per hour', 'Cleaning', true),
-('Disinfection Service', 'Complete disinfection and sanitization service', 180.00, 'per service', 'Cleaning', true),
-('Garden Pest Control', 'Pest control for gardens and outdoor spaces', 90.00, 'per service', 'Pest Control', true);
+INSERT INTO services (name, description, base_price, unit, category, is_active, display_price_type, min_price, max_price, image_url) VALUES
+('Residential Fumigation', 'Complete fumigation service for residential properties including termite treatment', 150.00, 'sqm', 'Fumigation', true, 'single', NULL, NULL, NULL),
+('Commercial Fumigation', 'Professional fumigation for commercial buildings and offices', 250.00, 'sqm', 'Fumigation', true, 'range', 200.00, 500.00, NULL),
+('Pest Control - General', 'General pest control for common household pests', 80.00, 'service', 'Pest Control', true, 'single', NULL, NULL, NULL),
+('Termite Treatment', 'Specialized termite inspection and treatment', 200.00, 'service', 'Fumigation', true, 'range', 150.00, 300.00, NULL),
+('Rodent Control', 'Complete rodent elimination and prevention service', 120.00, 'service', 'Pest Control', true, 'single', NULL, NULL, NULL),
+('Deep Cleaning Service', 'Professional deep cleaning for homes and offices', 100.00, 'hour', 'Cleaning', true, 'single', NULL, NULL, NULL),
+('Disinfection Service', 'Complete disinfection and sanitization service', 180.00, 'service', 'Cleaning', true, 'range', 150.00, 250.00, NULL),
+('Garden Pest Control', 'Pest control for gardens and outdoor spaces', 90.00, 'service', 'Pest Control', true, 'single', NULL, NULL, NULL);
 
 -- Insert Sample Customers
 INSERT INTO customers (name, email, phone, address) VALUES

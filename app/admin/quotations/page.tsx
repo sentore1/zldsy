@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X } from "lucide-react";
+import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X, Download } from "lucide-react";
+import { generateQuotationPDF, downloadPDF } from "@/lib/utils/pdf-generator";
 
 interface Quotation {
   id: string;
@@ -45,6 +46,8 @@ export default function QuotationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   
@@ -104,6 +107,25 @@ export default function QuotationsPage() {
       }
     } catch (err) {
       console.error("Failed to fetch services:", err);
+    }
+  };
+
+  const handleDownloadPDF = async (quotation: Quotation) => {
+    try {
+      setLoading(true);
+      const pdfBlob = await generateQuotationPDF(quotation);
+      
+      if (pdfBlob) {
+        downloadPDF(pdfBlob, `${quotation.quotation_number}.pdf`);
+        alert("Quotation PDF downloaded successfully!");
+      } else {
+        alert("Failed to generate PDF. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to download quotation PDF:", error);
+      alert("Failed to download PDF. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -314,9 +336,26 @@ export default function QuotationsPage() {
                       {new Date(quot.valid_until).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        <Eye className="w-5 h-5" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedQuotation(quot);
+                            setShowViewModal(true);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="View Quotation Details"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDownloadPDF(quot)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Download PDF"
+                          disabled={loading}
+                        >
+                          <Download className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -516,6 +555,145 @@ export default function QuotationsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Quotation Modal */}
+      {showViewModal && selectedQuotation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Quotation Details</h2>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedQuotation(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Header Info */}
+              <div className="bg-indigo-50 p-6 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-600 mb-1">Quotation Number</h3>
+                    <p className="text-2xl font-bold text-gray-900">{selectedQuotation.quotation_number}</p>
+                  </div>
+                  <StatusBadge status={selectedQuotation.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Created:</span>
+                    <span className="ml-2 font-semibold text-gray-900">
+                      {new Date(selectedQuotation.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Valid Until:</span>
+                    <span className="ml-2 font-semibold text-gray-900">
+                      {new Date(selectedQuotation.valid_until).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Information</h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Name:</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedQuotation.booking?.customer?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Email:</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedQuotation.booking?.customer?.email || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Service Details</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Service:</span>
+                    <span className="font-semibold text-gray-900">
+                      {selectedQuotation.booking?.service?.name || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Breakdown */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Financial Breakdown</h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-semibold text-gray-900">
+                      RWF {selectedQuotation.total_amount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Tax:</span>
+                    <span className="font-semibold text-gray-900">
+                      RWF {selectedQuotation.tax.toFixed(2)}
+                    </span>
+                  </div>
+                  {selectedQuotation.discount > 0 && (
+                    <div className="flex items-center justify-between text-green-600">
+                      <span>Discount:</span>
+                      <span className="font-semibold">
+                        -RWF {selectedQuotation.discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="border-t border-gray-300 pt-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold text-gray-900">Final Amount:</span>
+                      <span className="text-2xl font-bold text-indigo-600">
+                        RWF {selectedQuotation.final_amount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedQuotation(null);
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedQuotation) {
+                      handleDownloadPDF(selectedQuotation);
+                    }
+                  }}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-5 h-5" />
+                  {loading ? "Generating..." : "Download PDF"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

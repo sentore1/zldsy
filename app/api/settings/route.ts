@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabaseAdmin()
 
     const { data: settings, error } = await supabase
-      .from('system_settings')
+      .from('settings')
       .select('*')
       .single()
 
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
           timezone: 'UTC',
           quotation_validity_days: 30,
           invoice_due_days: 30,
+          momo_code: '',
         }
       })
     }
@@ -49,23 +50,21 @@ export async function POST(request: NextRequest) {
 
     // Check if settings already exist
     const { data: existing } = await supabase
-      .from('system_settings')
+      .from('settings')
       .select('id')
       .single()
 
     let result;
     if (existing) {
-      // Update existing settings
       result = await supabase
-        .from('system_settings')
+        .from('settings')
         .update(body)
         .eq('id', existing.id)
         .select()
         .single()
     } else {
-      // Insert new settings
       result = await supabase
-        .from('system_settings')
+        .from('settings')
         .insert(body)
         .select()
         .single()

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings as SettingsIcon, Save, Building2, Mail, Phone, MapPin, DollarSign, Calendar } from "lucide-react";
+import { Save, Building2, Mail, Phone, MapPin, DollarSign, Calendar } from "lucide-react";
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -14,11 +14,35 @@ export default function SettingsPage() {
     quotationValidityDays: "7",
     invoiceDueDays: "30",
     timezone: "America/New_York",
+    momoCode: "",
   });
 
-  const handleSave = () => {
-    // TODO: Connect to API
-    alert("Settings saved! (API connection needed)");
+  const handleSave = async () => {
+    try {
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company_name: settings.companyName,
+          company_email: settings.companyEmail,
+          company_phone: settings.companyPhone,
+          company_address: settings.companyAddress,
+          tax_rate: parseFloat(settings.taxRate),
+          currency: settings.currency,
+          quotation_validity_days: parseInt(settings.quotationValidityDays),
+          invoice_due_days: parseInt(settings.invoiceDueDays),
+          timezone: settings.timezone,
+          momo_code: settings.momoCode,
+        }),
+      });
+      if (response.ok) {
+        alert("Settings saved successfully!");
+      } else {
+        alert("Failed to save settings");
+      }
+    } catch {
+      alert("Error saving settings");
+    }
   };
 
   return (
@@ -27,7 +51,7 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold text-gray-900">System Settings</h1>
         <button
           onClick={handleSave}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center gap-2"
+          className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium flex items-center gap-2"
         >
           <Save className="w-5 h-5" />
           Save Settings
@@ -37,7 +61,7 @@ export default function SettingsPage() {
       {/* Company Information */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Building2 className="w-6 h-6 text-indigo-600" />
+          <Building2 className="w-6 h-6 text-teal-600" />
           <h2 className="text-2xl font-bold text-gray-900">Company Information</h2>
         </div>
 
@@ -50,7 +74,7 @@ export default function SettingsPage() {
               type="text"
               value={settings.companyName}
               onChange={(e) => setSettings({...settings, companyName: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
 
@@ -79,7 +103,7 @@ export default function SettingsPage() {
                 type="tel"
                 value={settings.companyPhone}
                 onChange={(e) => setSettings({...settings, companyPhone: e.target.value})}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               />
             </div>
           </div>
@@ -94,7 +118,7 @@ export default function SettingsPage() {
                 value={settings.companyAddress}
                 onChange={(e) => setSettings({...settings, companyAddress: e.target.value})}
                 rows={3}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               />
             </div>
           </div>
@@ -117,7 +141,7 @@ export default function SettingsPage() {
               type="number"
               value={settings.taxRate}
               onChange={(e) => setSettings({...settings, taxRate: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
           </div>
 
@@ -128,7 +152,7 @@ export default function SettingsPage() {
             <select
               value={settings.currency}
               onChange={(e) => setSettings({...settings, currency: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             >
               <option value="USD">USD - US Dollar</option>
               <option value="EUR">EUR - Euro</option>
@@ -144,7 +168,7 @@ export default function SettingsPage() {
             <select
               value={settings.timezone}
               onChange={(e) => setSettings({...settings, timezone: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             >
               <option value="America/New_York">Eastern Time</option>
               <option value="America/Chicago">Central Time</option>
@@ -152,13 +176,27 @@ export default function SettingsPage() {
               <option value="America/Los_Angeles">Pacific Time</option>
             </select>
           </div>
+
+          <div className="md:col-span-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              MoMo Payment Code
+            </label>
+            <input
+              type="text"
+              value={settings.momoCode}
+              onChange={(e) => setSettings({...settings, momoCode: e.target.value})}
+              placeholder="e.g. 0781234567"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-1">Used to generate USSD QR codes on invoices: *182*8*1*{'{momoCode}'}*{'{amount}'}#</p>
+          </div>
         </div>
       </div>
 
       {/* Document Settings */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center gap-3 mb-6">
-          <Calendar className="w-6 h-6 text-purple-600" />
+          <Calendar className="w-6 h-6 text-teal-600" />
           <h2 className="text-2xl font-bold text-gray-900">Document Settings</h2>
         </div>
 
@@ -171,7 +209,7 @@ export default function SettingsPage() {
               type="number"
               value={settings.quotationValidityDays}
               onChange={(e) => setSettings({...settings, quotationValidityDays: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
             <p className="text-sm text-gray-500 mt-1">How long quotations remain valid</p>
           </div>
@@ -184,7 +222,7 @@ export default function SettingsPage() {
               type="number"
               value={settings.invoiceDueDays}
               onChange={(e) => setSettings({...settings, invoiceDueDays: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
             />
             <p className="text-sm text-gray-500 mt-1">Default payment due period</p>
           </div>
@@ -192,8 +230,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="font-semibold text-blue-900 mb-2">⚠️ Note</h3>
+      <div className="bg-blue-10 border border-blue-200 rounded-lg p-6">
+        <h3 className="font-semibold text-blue-900 mb-2">Note</h3>
         <p className="text-blue-800 text-sm">
           Settings page UI is ready. To make these settings functional, connect to the <code className="bg-blue-100 px-2 py-1 rounded">/api/settings</code> endpoint.
           Add GET endpoint to fetch settings and POST/PATCH to update them in the database.

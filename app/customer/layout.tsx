@@ -10,17 +10,18 @@ export default function CustomerLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="bg-white p-1 rounded">
+            <Link href="/" className="flex items-center gap-3 relative z-10">
+              <div className="bg-white p-2 rounded relative z-10">
                 <Image
                   src="/logo.png"
                   alt="Service Portal"
-                  width={32}
-                  height={32}
-                  className="h-8 w-auto"
+                  width={48}
+                  height={48}
+                  className="h-12 w-auto"
+                  priority
                 />
               </div>
               <span className="text-xl font-semibold text-gray-900">
@@ -61,7 +62,7 @@ export default function CustomerLayout({
       <footer className="bg-white border-t border-gray-200 py-6 mt-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-gray-500">
-            © 2024 Service Portal. All rights reserved.
+            © 2026 ZldHub Service Portal. All rights reserved.
           </p>
         </div>
       </footer>

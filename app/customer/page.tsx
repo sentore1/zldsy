@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 interface Service {
-  id: string;
+  id: string;   
   name: string;
   description: string;
   base_price: number;
@@ -17,6 +17,7 @@ interface Service {
 export default function CustomerPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   useEffect(() => {
     fetchServices();
@@ -37,6 +38,14 @@ export default function CustomerPage() {
       setLoading(false);
     }
   };
+
+  // Get unique categories from services
+  const categories = ["All", ...Array.from(new Set(services.map(s => s.category)))];
+
+  // Filter services based on selected category
+  const filteredServices = selectedCategory === "All" 
+    ? services 
+    : services.filter(s => s.category === selectedCategory);
 
   return (
     <div className="space-y-16">
@@ -95,26 +104,45 @@ export default function CustomerPage() {
 
       {/* Services Grid */}
       <div>
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Our Services
-          </h2>
-          <p className="text-gray-600">
-            Choose from our range of professional services
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded text-sm font-medium transition ${
+                  selectedCategory === category
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          <div className="text-left md:text-right">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Our Services
+            </h2>
+            <p className="text-gray-600">
+              Choose from our range of professional services
+            </p>
+          </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </div>
-        ) : services.length === 0 ? (
+        ) : filteredServices.length === 0 ? (
           <div className="text-center py-20 border border-gray-200 rounded-lg">
-            <p className="text-gray-500">No services available</p>
+            <p className="text-gray-500">No services available in this category</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
+            {filteredServices.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
           </div>

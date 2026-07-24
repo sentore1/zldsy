@@ -42,12 +42,20 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
 
   const [formData, setFormData] = useState({
     customer_id: "",
     service_id: "",
     preferred_date: "",
     notes: "",
+  });
+
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
   });
 
   useEffect(() => {
@@ -173,6 +181,41 @@ export default function BookingsPage() {
       preferred_date: "",
       notes: "",
     });
+  };
+
+  const resetCustomerForm = () => {
+    setNewCustomerData({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+    });
+  };
+
+  const handleAddCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCustomerData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await fetchCustomers();
+        setFormData({ ...formData, customer_id: data.customer.id });
+        setShowAddCustomerModal(false);
+        resetCustomerForm();
+        alert("Customer added successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to add customer");
+      }
+    } catch (err) {
+      console.error("Failed to add customer:", err);
+      alert("Failed to add customer");
+    }
   };
 
   if (loading) {
@@ -442,21 +485,31 @@ export default function BookingsPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Customer *
                 </label>
-                <select
-                  required
-                  value={formData.customer_id}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customer_id: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.phone}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    required
+                    value={formData.customer_id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, customer_id: e.target.value })
+                    }
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.phone}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCustomerModal(true)}
+                    className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center gap-2"
+                    title="Add New Customer"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -526,6 +579,110 @@ export default function BookingsPage() {
                   className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
                 >
                   Create Booking
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold">Add New Customer</h2>
+              <button
+                onClick={() => {
+                  setShowAddCustomerModal(false);
+                  resetCustomerForm();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomer} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newCustomerData.name}
+                  onChange={(e) =>
+                    setNewCustomerData({ ...newCustomerData, name: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="Customer name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newCustomerData.email}
+                  onChange={(e) =>
+                    setNewCustomerData({ ...newCustomerData, email: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="customer@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={newCustomerData.phone}
+                  onChange={(e) =>
+                    setNewCustomerData({ ...newCustomerData, phone: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="+250 XXX XXX XXX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Address
+                </label>
+                <textarea
+                  value={newCustomerData.address}
+                  onChange={(e) =>
+                    setNewCustomerData({ ...newCustomerData, address: e.target.value })
+                  }
+                  rows={2}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                  placeholder="Customer address (optional)"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddCustomerModal(false);
+                    resetCustomerForm();
+                  }}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                >
+                  Add Customer
                 </button>
               </div>
             </form>
