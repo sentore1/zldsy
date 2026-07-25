@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -120,7 +121,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className={`flex items-center border-b border-[#09ACAD]/40 ${collapsed ? "justify-center p-4" : "justify-between p-4 pl-5"}`}>
           {!collapsed && (
             <div className="overflow-hidden">
-              <h1 className="text-lg font-bold whitespace-nowrap">Admin Panel</h1>
+              <div className="flex items-center gap-2 mb-1">
+                <Image 
+                  src="/logo.png" 
+                  alt="Logo" 
+                  width={28} 
+                  height={28}
+                  className="object-contain"
+                />
+                <h1 className="text-lg font-bold whitespace-nowrap">Admin Panel</h1>
+              </div>
               {userEmail && (
                 <p className="text-xs text-gray-400 truncate max-w-[160px]">{userEmail}</p>
               )}
@@ -128,6 +138,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 {ROLE_LABELS[userRole]}
               </span>
             </div>
+          )}
+          {collapsed && (
+            <Image 
+              src="/logo.png" 
+              alt="Logo" 
+              width={32} 
+              height={32}
+              className="object-contain"
+            />
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}

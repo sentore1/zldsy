@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/client'
 
+// CORS headers for mobile app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = getSupabaseAdmin()
@@ -54,12 +66,12 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to create booking')
     }
 
-    return NextResponse.json({ booking }, { status: 201 })
+    return NextResponse.json({ booking }, { status: 201, headers: corsHeaders })
   } catch (error: any) {
     console.error('API Error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
@@ -95,12 +107,12 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch bookings')
     }
 
-    return NextResponse.json({ bookings: data || [] })
+    return NextResponse.json({ bookings: data || [] }, { headers: corsHeaders })
   } catch (error: any) {
     console.error('API Error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

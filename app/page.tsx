@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, FileText, Wrench } from "lucide-react";
-import QuickBookingModal from "@/components/QuickBookingModal";
+import Image from "next/image";
+import { ArrowRight, Loader2, FileText } from "lucide-react";
 
 // Format currency for better readability
 function formatCurrency(amount: number): string {
@@ -33,9 +33,6 @@ export default function Home() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [requestQuote, setRequestQuote] = useState(false);
 
   useEffect(() => {
     fetchServices();
@@ -68,13 +65,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white sticky top-0 z-50">
+      <header className="bg-white sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-3 relative z-10">
-              <div className="p-2 rounded relative z-10" style={{ backgroundColor: '#005555' }}>
-                <Wrench className="h-8 w-8 text-white" />
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="Service Portal Logo" 
+                width={40} 
+                height={40}
+                className="object-contain"
+              />
               <span className="text-xl font-semibold text-gray-900">
                 Service Portal
               </span>
@@ -123,7 +124,7 @@ export default function Home() {
               <h2 className="text-2xl md:text-4xl font-extrabold mb-2" style={{ color: '#16797c' }}>
                 Our Services
               </h2>
-              <p className="text-lg text-gray-600">
+              <p className="text-sm text-gray-600">
                 Choose from our range of professional services
               </p>
             </div>
@@ -155,7 +156,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               How It Works
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-sm text-gray-600">
               Simple process to get your service completed
             </p>
           </div>
