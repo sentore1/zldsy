@@ -60,7 +60,7 @@ export default function LoginPage() {
                 />
               </div>
               <h1 className="text-2xl font-bold text-blue-700">
-                ZLD System
+                ZLDHub
               </h1>
             </Link>
           </div>

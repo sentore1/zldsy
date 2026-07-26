@@ -31,6 +31,7 @@ export default function StaffPage() {
     role: "",
     hourly_rate: "",
     is_active: true,
+    password: "",
   });
 
   useEffect(() => {
@@ -151,6 +152,7 @@ export default function StaffPage() {
       role: "",
       hourly_rate: "",
       is_active: true,
+      password: "",
     });
   };
 
@@ -509,7 +511,7 @@ function StaffModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Hourly Rate ($) *
+                Hourly Rate (RWF) *
               </label>
               <input
                 type="number"
@@ -524,6 +526,26 @@ function StaffModal({
               />
             </div>
           </div>
+
+          {title.includes("Add") && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Password (Optional)
+              </label>
+              <input
+                type="password"
+                value={formData.password || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                placeholder="Set password to allow login"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Leave blank to create staff without login access. Staff can be given access later.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <input
