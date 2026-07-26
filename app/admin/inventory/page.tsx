@@ -373,7 +373,7 @@ export default function InventoryPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredInventory.map((item) => {
-                const isLowStock = item.quantity <= item.reorderLevel;
+                const isLowStock = item.quantity <= item.reorder_level;
                 return (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
@@ -396,7 +396,7 @@ export default function InventoryPage() {
                             {item.name}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Last restocked: {item.lastRestocked}
+                            {item.category}
                           </div>
                         </div>
                       </div>

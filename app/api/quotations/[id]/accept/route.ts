@@ -3,11 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase/client'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = supabaseAdmin
-    const quotationId = params.id
+    const { id: quotationId } = await params
 
     // Get quotation details
     const { data: quotation, error: quotationError } = await supabase
@@ -168,11 +168,11 @@ export async function POST(
 // Reject quotation endpoint
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = supabaseAdmin
-    const quotationId = params.id
+    const { id: quotationId } = await params
 
     const { error } = await supabase
       .from('quotations')
