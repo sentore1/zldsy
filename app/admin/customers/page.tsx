@@ -417,11 +417,10 @@ function CustomerModal({
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Name *
+              Full Name
             </label>
             <input
               type="text"
-              required
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -433,11 +432,10 @@ function CustomerModal({
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Email *
+              Email
             </label>
             <input
               type="email"
-              required
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
@@ -449,11 +447,10 @@ function CustomerModal({
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Phone *
+              Phone
             </label>
             <input
               type="tel"
-              required
               value={formData.phone}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })

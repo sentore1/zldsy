@@ -92,21 +92,26 @@ async function drawHeader(
 
   // ── QR code (right side of header) ────────────────────────────────────────
   const qrData = qrUrl ? await makeQRDataUrl(qrUrl) : null
-  const QR_SIZE = 26
-  const QR_X = PAGE_W - QR_SIZE - 6
-  const QR_Y = 5
 
   if (qrData) {
+    // Shrink QR so it fits comfortably inside the 42 mm header
+    const QR_DISPLAY = 22          // render size (was 26)
+    const QR_LABEL_H = 5           // space for "Scan to verify" text
+    const BOX_W = QR_DISPLAY + 4
+    const BOX_H = QR_DISPLAY + QR_LABEL_H + 2  // tight fit, stays within header
+    const qrX = PAGE_W - BOX_W - 4
+    const qrY = (HEADER_H - BOX_H) / 2          // vertically centred in header
+
     // White background pill behind QR
     pdf.setFillColor(255, 255, 255)
-    pdf.roundedRect(QR_X - 2, QR_Y - 1, QR_SIZE + 4, QR_SIZE + 10, 2, 2, 'F')
+    pdf.roundedRect(qrX, qrY, BOX_W, BOX_H, 2, 2, 'F')
 
-    pdf.addImage(qrData, 'PNG', QR_X, QR_Y, QR_SIZE, QR_SIZE, undefined, 'FAST')
+    pdf.addImage(qrData, 'PNG', qrX + 2, qrY + 1, QR_DISPLAY, QR_DISPLAY, undefined, 'FAST')
 
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(5.5)
+    pdf.setFontSize(5)
     pdf.setTextColor(BRAND_R, BRAND_G, BRAND_B)
-    pdf.text('Scan to verify', QR_X + QR_SIZE / 2, QR_Y + QR_SIZE + 6, { align: 'center' })
+    pdf.text('Scan to verify', qrX + BOX_W / 2, qrY + QR_DISPLAY + 4, { align: 'center' })
   }
 
   // ── Document type badge (below header, left) ───────────────────────────────
@@ -292,8 +297,8 @@ export async function generateQuotationPDF(quotation: any): Promise<Blob | null>
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(9)
     pdf.text('Description', 25, yPos + 5.5)
-    pdf.text('Qty', 120, yPos + 5.5)
-    pdf.text('Unit Price', 145, yPos + 5.5)
+    pdf.text('Qty', 115, yPos + 5.5, { align: 'center' })
+    pdf.text('Unit Price', 152, yPos + 5.5, { align: 'right' })
     pdf.text('Amount', 182, yPos + 5.5, { align: 'right' })
     yPos += 8
 
@@ -307,8 +312,8 @@ export async function generateQuotationPDF(quotation: any): Promise<Blob | null>
 
     const serviceName = quotation.booking?.service?.name || 'Service'
     pdf.text(serviceName, 25, yPos + 5)
-    pdf.text('1', 122, yPos + 5)
-    pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, 147, yPos + 5)
+    pdf.text('1', 115, yPos + 5, { align: 'center' })
+    pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, 152, yPos + 5, { align: 'right' })
     pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, 182, yPos + 5, { align: 'right' })
     yPos += 7
 

@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('services')
       .select('*')
-      .order('name', { ascending: true })
+      .order('sort_order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true })
 
     if (category) {
       query = query.eq('category', category)
@@ -25,7 +26,23 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_active', isActive === 'true')
     }
 
-    const { data, error } = await query
+    let { data, error } = await query
+
+    // If sort_order column doesn't exist yet, fall back to creation order (not name)
+    if (error && error.code === '42703' && error.message.includes('sort_order')) {
+      const fallback = supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      const fallbackQuery = category ? fallback.eq('category', category) : fallback
+      const result = isActive !== null
+        ? await fallbackQuery.eq('is_active', isActive === 'true')
+        : await fallbackQuery
+
+      data = result.data
+      error = result.error
+    }
 
     if (error) {
       console.error('Services fetch error:', error)

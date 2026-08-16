@@ -55,7 +55,12 @@ export default function Home() {
     }
   };
 
-  const categories = ["All", ...new Set(services.map((s) => s.category))];
+  const categories = [
+    "All",
+    ...Array.from(new Set(services.map((s) => s.category)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b)),
+  ];
 
   const filteredServices =
     selectedCategory === "All"
@@ -72,8 +77,8 @@ export default function Home() {
               <Image 
                 src="/logo.png" 
                 alt="Service Portal Logo" 
-                width={40} 
-                height={40}
+                width={64} 
+                height={64}
                 className="object-contain"
               />
               <span className="text-xl font-semibold text-gray-900">

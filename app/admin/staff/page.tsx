@@ -460,11 +460,10 @@ function StaffModal({
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Full Name *
+              Full Name
             </label>
             <input
               type="text"
-              required
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -477,11 +476,10 @@ function StaffModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email *
+                Email
               </label>
               <input
                 type="email"
-                required
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -493,11 +491,10 @@ function StaffModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Phone *
+                Phone
               </label>
               <input
                 type="tel"
-                required
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
@@ -511,10 +508,9 @@ function StaffModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                System Role *
+                System Role
               </label>
               <select
-                required
                 value={formData.role}
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
@@ -530,12 +526,11 @@ function StaffModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Rate (RWF) *
+                Rate (RWF)
               </label>
               <div className="flex gap-2">
                 <input
                   type="number"
-                  required
                   step="0.01"
                   min="0"
                   value={formData.hourly_rate}

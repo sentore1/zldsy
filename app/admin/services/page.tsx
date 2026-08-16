@@ -1,14 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit, Trash2, DollarSign, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { Plus, Search, Edit, Trash2, DollarSign, ToggleLeft, ToggleRight, X, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Format currency for better readability
 function formatCurrency(amount: number): string {
   if (amount >= 1000000) {
-    return `${(amount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+    return `${(amount / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
   } else if (amount >= 1000) {
-    return `${(amount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+    return `${(amount / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   }
   return amount.toString();
 }
@@ -20,14 +37,178 @@ interface Service {
   base_price: number;
   min_price: number | null;
   max_price: number | null;
-  display_price_type: 'single' | 'range';
+  display_price_type: "single" | "range";
   unit: string | null;
   category: string | null;
   image_url: string | null;
   is_active: boolean;
+  sort_order?: number | null;
   created_at?: string;
   updated_at?: string;
 }
+
+// ─── Sortable Card ────────────────────────────────────────────────────────────
+
+function SortableServiceCard({
+  service,
+  onEdit,
+  onDelete,
+  onToggle,
+  isDragging,
+}: {
+  service: Service;
+  onEdit: (s: Service) => void;
+  onDelete: (id: string) => void;
+  onToggle: (id: string) => void;
+  isDragging: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSelfDragging,
+  } = useSortable({ id: service.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isSelfDragging ? 0.3 : 1,
+    cursor: isDragging ? "grabbing" : "default",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow"
+    >
+      {/* Drag handle bar */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center gap-1 py-2 bg-gray-50 border-b border-gray-100 cursor-grab active:cursor-grabbing select-none text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+        <span className="text-xs font-medium">drag to reorder</span>
+      </div>
+
+      {/* Service Image */}
+      {service.image_url && (
+        <div className="relative h-48 w-full bg-gray-100">
+          <img
+            src={service.image_url}
+            alt={service.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <div className="p-6 pb-0 flex items-center justify-between">
+        <div className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-sm font-semibold">
+          {service.category || "Uncategorized"}
+        </div>
+        <button
+          onClick={() => onToggle(service.id)}
+          className="text-teal-600 hover:scale-110 transition"
+        >
+          {service.is_active ? (
+            <ToggleRight className="w-8 h-8" />
+          ) : (
+            <ToggleLeft className="w-8 h-8" />
+          )}
+        </button>
+      </div>
+
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="text-xl font-bold text-gray-900">{service.name}</h3>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              service.is_active
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {service.is_active ? "Active" : "Inactive"}
+          </span>
+        </div>
+
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          {service.description || "No description"}
+        </p>
+
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600 text-sm">Price</span>
+            <span className="font-bold text-teal-600 text-lg flex items-center gap-1">
+              <DollarSign className="w-4 h-4" />
+              {service.display_price_type === "range" &&
+              service.min_price &&
+              service.max_price
+                ? `${formatCurrency(service.min_price)} - ${formatCurrency(service.max_price)} Rwf`
+                : `${formatCurrency(service.base_price)} Rwf`}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600 text-sm">Unit</span>
+            <span className="font-semibold text-gray-900">
+              {service.unit || "N/A"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(service)}
+            className="flex-1 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition font-medium flex items-center justify-center gap-2"
+          >
+            <Edit className="w-4 h-4" />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(service.id)}
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Drag Overlay Card (ghost while dragging) ─────────────────────────────────
+
+function DragOverlayCard({ service }: { service: Service }) {
+  return (
+    <div className="bg-white rounded-xl shadow-2xl overflow-hidden opacity-95 rotate-2 scale-105 ring-2 ring-teal-400">
+      <div className="flex items-center justify-center gap-1 py-2 bg-teal-50 border-b border-teal-100 text-teal-500">
+        <GripVertical className="w-4 h-4" />
+        <span className="text-xs font-medium">moving…</span>
+      </div>
+      {service.image_url && (
+        <div className="h-32 w-full bg-gray-100">
+          <img
+            src={service.image_url}
+            alt={service.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      <div className="p-4">
+        <div className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-sm font-semibold inline-block mb-2">
+          {service.category || "Uncategorized"}
+        </div>
+        <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -37,13 +218,15 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     category: "",
-    display_price_type: "single" as 'single' | 'range',
+    display_price_type: "single" as "single" | "range",
     base_price: "",
     min_price: "",
     max_price: "",
@@ -54,13 +237,18 @@ export default function ServicesPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
 
+  // DnD sensors — require 8px movement before drag starts (prevents accidental drags on click)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   // Fetch services
   const fetchServices = async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/services");
       const data = await response.json();
-      
+
       if (response.ok) {
         setServices(data.services || []);
       } else {
@@ -80,8 +268,48 @@ export default function ServicesPage() {
   const filteredServices = services.filter(
     (service) =>
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (service.category && service.category.toLowerCase().includes(searchTerm.toLowerCase()))
+      (service.category &&
+        service.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // ── Drag handlers ────────────────────────────────────────────────────────────
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) return;
+
+    // Reorder is only meaningful when not filtering
+    if (searchTerm) return;
+
+    const oldIndex = services.findIndex((s) => s.id === active.id);
+    const newIndex = services.findIndex((s) => s.id === over.id);
+    const reordered = arrayMove(services, oldIndex, newIndex);
+
+    // Optimistically update UI
+    setServices(reordered);
+
+    // Persist to server
+    setIsSaving(true);
+    try {
+      await fetch("/api/services/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds: reordered.map((s) => s.id) }),
+      });
+    } catch (err) {
+      console.error("Failed to persist order:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ── CRUD handlers ─────────────────────────────────────────────────────────────
 
   const toggleServiceStatus = async (id: string) => {
     try {
@@ -110,11 +338,7 @@ export default function ServicesPage() {
     e.preventDefault();
     try {
       let uploadedImageUrl = formData.image_url;
-
-      // Upload image if selected
-      if (imageFile) {
-        uploadedImageUrl = await uploadServiceImage(imageFile);
-      }
+      if (imageFile) uploadedImageUrl = await uploadServiceImage(imageFile);
 
       const payload: any = {
         name: formData.name,
@@ -124,16 +348,17 @@ export default function ServicesPage() {
         display_price_type: formData.display_price_type,
         image_url: uploadedImageUrl,
         is_active: formData.is_active,
+        sort_order: services.length, // append to end
       };
 
-      if (formData.display_price_type === 'single') {
+      if (formData.display_price_type === "single") {
         payload.base_price = parseFloat(formData.base_price);
         payload.min_price = null;
         payload.max_price = null;
       } else {
         payload.min_price = parseFloat(formData.min_price);
         payload.max_price = parseFloat(formData.max_price);
-        payload.base_price = parseFloat(formData.min_price); // Set base_price to min for backward compatibility
+        payload.base_price = parseFloat(formData.min_price);
       }
 
       const response = await fetch("/api/services", {
@@ -158,11 +383,7 @@ export default function ServicesPage() {
 
     try {
       let uploadedImageUrl = formData.image_url;
-
-      // Upload new image if selected
-      if (imageFile) {
-        uploadedImageUrl = await uploadServiceImage(imageFile);
-      }
+      if (imageFile) uploadedImageUrl = await uploadServiceImage(imageFile);
 
       const payload: any = {
         name: formData.name,
@@ -174,14 +395,14 @@ export default function ServicesPage() {
         is_active: formData.is_active,
       };
 
-      if (formData.display_price_type === 'single') {
+      if (formData.display_price_type === "single") {
         payload.base_price = parseFloat(formData.base_price);
         payload.min_price = null;
         payload.max_price = null;
       } else {
         payload.min_price = parseFloat(formData.min_price);
         payload.max_price = parseFloat(formData.max_price);
-        payload.base_price = parseFloat(formData.min_price); // Set base_price to min for backward compatibility
+        payload.base_price = parseFloat(formData.min_price);
       }
 
       const response = await fetch(`/api/services/${selectedService.id}`, {
@@ -223,7 +444,7 @@ export default function ServicesPage() {
       name: service.name,
       description: service.description || "",
       category: service.category || "",
-      display_price_type: service.display_price_type || 'single',
+      display_price_type: service.display_price_type || "single",
       base_price: service.base_price.toString(),
       min_price: service.min_price?.toString() || "",
       max_price: service.max_price?.toString() || "",
@@ -254,18 +475,15 @@ export default function ServicesPage() {
   };
 
   const uploadServiceImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
+    const fd = new FormData();
+    fd.append("file", file);
 
-    const response = await fetch('/api/services/upload-image', {
-      method: 'POST',
-      body: formData,
+    const response = await fetch("/api/services/upload-image", {
+      method: "POST",
+      body: fd,
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to upload image');
-    }
-
+    if (!response.ok) throw new Error("Failed to upload image");
     const data = await response.json();
     return data.url;
   };
@@ -275,12 +493,16 @@ export default function ServicesPage() {
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
+
+  const activeService = activeId
+    ? services.find((s) => s.id === activeId) ?? null
+    : null;
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -294,10 +516,7 @@ export default function ServicesPage() {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-600">{error}</p>
-        <button
-          onClick={fetchServices}
-          className="mt-2 text-red-600 underline"
-        >
+        <button onClick={fetchServices} className="mt-2 text-red-600 underline">
           Try Again
         </button>
       </div>
@@ -307,7 +526,15 @@ export default function ServicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+          {isSaving && (
+            <p className="text-sm text-teal-600 mt-1 flex items-center gap-1">
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-teal-600 border-t-transparent animate-spin" />
+              Saving order…
+            </p>
+          )}
+        </div>
         <button
           onClick={() => {
             resetForm();
@@ -349,9 +576,9 @@ export default function ServicesPage() {
             Average Price
           </h3>
           <p className="text-3xl font-bold text-teal-600">
-            {services.length > 0 
-              ? `${formatCurrency(Math.round(services.reduce((sum, s) => sum + s.base_price, 0) / services.length))} Rwf` 
-              : '0 Rwf'}
+            {services.length > 0
+              ? `${formatCurrency(Math.round(services.reduce((sum, s) => sum + s.base_price, 0) / services.length))} Rwf`
+              : "0 Rwf"}
           </p>
         </div>
       </div>
@@ -362,105 +589,51 @@ export default function ServicesPage() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search services by name or category..."
+            placeholder="Search services by name or category…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
           />
         </div>
+        {searchTerm && (
+          <p className="mt-2 text-xs text-amber-600">
+            Drag-to-reorder is disabled while searching.
+          </p>
+        )}
       </div>
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.map((service) => (
-          <div
-            key={service.id}
-            className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition"
-          >
-            {/* Service Image */}
-            {service.image_url && (
-              <div className="relative h-48 w-full bg-gray-100">
-                <img
-                  src={service.image_url}
-                  alt={service.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            <div className="p-6 pb-0 flex items-center justify-between">
-              <div className="bg-teal-100 text-teal-700 px-3 py-1 rounded-full text-sm font-semibold">
-                {service.category || "Uncategorized"}
-              </div>
-              <button
-                onClick={() => toggleServiceStatus(service.id)}
-                className="text-teal-600 hover:scale-110 transition"
-              >
-                {service.is_active ? (
-                  <ToggleRight className="w-8 h-8" />
-                ) : (
-                  <ToggleLeft className="w-8 h-8" />
-                )}
-              </button>
-            </div>
-
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {service.name}
-                </h3>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    service.is_active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {service.is_active ? "Active" : "Inactive"}
-                </span>
-              </div>
-
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                {service.description || "No description"}
-              </p>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-sm">Price</span>
-                  <span className="font-bold text-teal-600 text-lg flex items-center gap-1">
-                    <DollarSign className="w-4 h-4" />
-                    {service.display_price_type === 'range' && service.min_price && service.max_price
-                      ? `${formatCurrency(service.min_price)} - ${formatCurrency(service.max_price)} Rwf`
-                      : `${formatCurrency(service.base_price)} Rwf`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600 text-sm">Unit</span>
-                  <span className="font-semibold text-gray-900">
-                    {service.unit || "N/A"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openEditModal(service)}
-                  className="flex-1 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg hover:bg-teal-100 transition font-medium flex items-center justify-center gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteService(service.id)}
-                  className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={filteredServices.map((s) => s.id)}
+          strategy={rectSortingStrategy}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.map((service) => (
+              <SortableServiceCard
+                key={service.id}
+                service={service}
+                onEdit={openEditModal}
+                onDelete={handleDeleteService}
+                onToggle={toggleServiceStatus}
+                isDragging={activeId !== null}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+
+        {/* Floating ghost card while dragging */}
+        <DragOverlay>
+          {activeService ? (
+            <DragOverlayCard service={activeService} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {filteredServices.length === 0 && (
         <div className="bg-white rounded-xl shadow-lg p-12 text-center">
@@ -504,6 +677,8 @@ export default function ServicesPage() {
   );
 }
 
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
 function ServiceModal({
   title,
   formData,
@@ -526,10 +701,7 @@ function ServiceModal({
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold">{title}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -537,15 +709,12 @@ function ServiceModal({
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Service Name *
+              Service Name
             </label>
             <input
               type="text"
-              required
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
               placeholder="e.g., Home Fumigation"
             />
@@ -566,7 +735,6 @@ function ServiceModal({
             />
           </div>
 
-          {/* Service Image Upload */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Service Image
@@ -603,7 +771,6 @@ function ServiceModal({
                 placeholder="e.g., Fumigation"
               />
             </div>
-
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Unit
@@ -620,10 +787,9 @@ function ServiceModal({
             </div>
           </div>
 
-          {/* Price Type Selection */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Price Display Type *
+              Price Display Type
             </label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -631,7 +797,7 @@ function ServiceModal({
                   type="radio"
                   name="display_price_type"
                   value="single"
-                  checked={formData.display_price_type === 'single'}
+                  checked={formData.display_price_type === "single"}
                   onChange={(e) =>
                     setFormData({ ...formData, display_price_type: e.target.value })
                   }
@@ -644,7 +810,7 @@ function ServiceModal({
                   type="radio"
                   name="display_price_type"
                   value="range"
-                  checked={formData.display_price_type === 'range'}
+                  checked={formData.display_price_type === "range"}
                   onChange={(e) =>
                     setFormData({ ...formData, display_price_type: e.target.value })
                   }
@@ -655,15 +821,13 @@ function ServiceModal({
             </div>
           </div>
 
-          {/* Conditional Price Input */}
-          {formData.display_price_type === 'single' ? (
+          {formData.display_price_type === "single" ? (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Base Price * (RWF)
+                Base Price (RWF)
               </label>
               <input
                 type="number"
-                required
                 step="0.01"
                 value={formData.base_price}
                 onChange={(e) =>
@@ -677,11 +841,10 @@ function ServiceModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Min Price * (RWF)
+                  Min Price (RWF)
                 </label>
                 <input
                   type="number"
-                  required
                   step="0.01"
                   value={formData.min_price}
                   onChange={(e) =>
@@ -693,11 +856,10 @@ function ServiceModal({
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Max Price * (RWF)
+                  Max Price (RWF)
                 </label>
                 <input
                   type="number"
-                  required
                   step="0.01"
                   value={formData.max_price}
                   onChange={(e) =>
@@ -720,7 +882,10 @@ function ServiceModal({
               }
               className="w-5 h-5 text-teal-600 rounded focus:ring-teal-500"
             />
-            <label htmlFor="is_active" className="text-sm font-semibold text-gray-700">
+            <label
+              htmlFor="is_active"
+              className="text-sm font-semibold text-gray-700"
+            >
               Active (visible to customers)
             </label>
           </div>

@@ -541,11 +541,10 @@ export default function InventoryPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Add Quantity *
+                  Add Quantity
                 </label>
                 <input
                   type="number"
-                  required
                   step="0.01"
                   value={restockQuantity}
                   onChange={(e) => setRestockQuantity(e.target.value)}
@@ -615,11 +614,10 @@ function InventoryModal({
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Item Name *
+              Item Name
             </label>
             <input
               type="text"
-              required
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -632,11 +630,10 @@ function InventoryModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Category *
+                Category
               </label>
               <input
                 type="text"
-                required
                 value={formData.category}
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
@@ -648,11 +645,10 @@ function InventoryModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Unit *
+                Unit
               </label>
               <input
                 type="text"
-                required
                 value={formData.unit}
                 onChange={(e) =>
                   setFormData({ ...formData, unit: e.target.value })
@@ -666,11 +662,10 @@ function InventoryModal({
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Quantity *
+                Quantity
               </label>
               <input
                 type="number"
-                required
                 step="0.01"
                 value={formData.quantity}
                 onChange={(e) =>
@@ -683,11 +678,10 @@ function InventoryModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Unit Cost (RWF) *
+                Unit Cost (RWF)
               </label>
               <input
                 type="number"
-                required
                 step="0.01"
                 value={formData.unit_cost}
                 onChange={(e) =>
@@ -700,11 +694,10 @@ function InventoryModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Reorder Level *
+                Reorder Level
               </label>
               <input
                 type="number"
-                required
                 step="0.01"
                 value={formData.reorder_level}
                 onChange={(e) =>

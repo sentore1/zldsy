@@ -326,11 +326,10 @@ function EquipmentModal({
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Equipment Name *
+              Equipment Name
             </label>
             <input
               type="text"
-              required
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
@@ -343,10 +342,9 @@ function EquipmentModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Type *
+                Type
               </label>
               <select
-                required
                 value={formData.type}
                 onChange={(e) =>
                   setFormData({ ...formData, type: e.target.value })
@@ -362,10 +360,9 @@ function EquipmentModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Status *
+                Status
               </label>
               <select
-                required
                 value={formData.status}
                 onChange={(e) =>
                   setFormData({ ...formData, status: e.target.value })
@@ -382,11 +379,10 @@ function EquipmentModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Registration Number *
+                Registration Number
               </label>
               <input
                 type="text"
-                required
                 value={formData.registration_number}
                 onChange={(e) =>
                   setFormData({ ...formData, registration_number: e.target.value })
