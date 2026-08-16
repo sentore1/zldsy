@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Upload, Calendar, User, Phone, Mail, MapPin, Loader2 } from "lucide-react";
 
@@ -15,6 +15,14 @@ interface Service {
 }
 
 export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto"><div className="bg-white rounded-2xl shadow-xl p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div></div>}>
+      <BookingForm />
+    </Suspense>
+  );
+}
+
+function BookingForm() {
   const searchParams = useSearchParams();
   const serviceIdFromUrl = searchParams.get("service");
 
