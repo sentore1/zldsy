@@ -42,11 +42,12 @@ export async function PATCH(
   try {
     const supabase = getSupabaseAdmin()
     const { id } = await params
-    const updates = await request.json()
-
-    const { data, error } = await supabase
-      .from('bookings')
-      .update(updates)
+    const body = await request.json()
+    
+    // Workaround for Supabase type inference issue
+    const query = supabase.from('bookings') as any
+    const { data, error } = await query
+      .update(body)
       .eq('id', id)
       .select('*, customer:customers(*), service:services(*)')
       .single()

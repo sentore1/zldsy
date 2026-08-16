@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       .eq('invoice_id', invoice_id)
 
     const totalPaid = existingPayments?.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum: number, payment: any) => sum + Number(payment.amount),
       0
     ) || 0
 
@@ -296,7 +296,7 @@ export async function GET(request: NextRequest) {
     }
 
     const totalPaid = payments?.reduce(
-      (sum, payment) => sum + Number(payment.amount),
+      (sum: number, payment: any) => sum + Number(payment.amount),
       0
     ) || 0
 

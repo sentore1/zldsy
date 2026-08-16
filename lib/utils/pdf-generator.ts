@@ -1,10 +1,147 @@
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
+// ─── Brand colours ────────────────────────────────────────────────────────────
+const BRAND_R = 40
+const BRAND_G = 168
+const BRAND_B = 172 // #28A8AC
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Convert a public-path image to a base64 data-URL (client-side only) */
+async function loadImageAsBase64(publicPath: string): Promise<string | null> {
+  try {
+    const response = await fetch(publicPath)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
+/** Generate a QR-code data URL for the given text (client-side, lazy import) */
+async function makeQRDataUrl(text: string): Promise<string | null> {
+  try {
+    const QRCode = (await import('qrcode')).default
+    return await QRCode.toDataURL(text, { width: 160, margin: 1 })
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Draw the branded header band at the top of the first page.
+ * Returns the Y position immediately after the header.
+ *
+ * Layout:
+ *   ┌──────────────────────────────────────────────────────────┐  ← y=0
+ *   │  [logo]          COMPANY NAME          [QR code band]   │
+ *   │                  tagline / contact                       │
+ *   └──────────────────────────────────────────────────────────┘  ← y=HEADER_H
+ *
+ * The QR code sits in a white rounded box on the RIGHT side of the header.
+ */
+async function drawHeader(
+  pdf: jsPDF,
+  docTitle: string,
+  qrUrl: string | null
+): Promise<number> {
+  const HEADER_H = 42
+  const PAGE_W = 210
+
+  // Background band
+  pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+  pdf.rect(0, 0, PAGE_W, HEADER_H, 'F')
+
+  // Horizontal accent stripe (slightly darker) at bottom of header
+  pdf.setFillColor(24, 138, 142)
+  pdf.rect(0, HEADER_H - 3, PAGE_W, 3, 'F')
+
+  // ── Logo (white version) ───────────────────────────────────────────────────
+  const logoData = await loadImageAsBase64('/logowhite.png')
+  if (logoData) {
+    // Keep aspect, max height = 20 mm, max width = 40 mm
+    pdf.addImage(logoData, 'PNG', 6, 8, 36, 16, undefined, 'FAST')
+  } else {
+    // Fallback text logo
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(13)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text('Premier', 8, 18)
+    pdf.setFontSize(8)
+    pdf.text('Service Management', 8, 24)
+  }
+
+  // ── Company name + contact (centre) ───────────────────────────────────────
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(14)
+  pdf.setTextColor(255, 255, 255)
+  pdf.text('Premier Service Management', PAGE_W / 2, 14, { align: 'center' })
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(8)
+  pdf.setTextColor(220, 245, 246)
+  pdf.text('info@premierservice.com  |  +250 788 000 000', PAGE_W / 2, 20, { align: 'center' })
+  pdf.text('KG 123 St, Kigali, Rwanda', PAGE_W / 2, 25, { align: 'center' })
+
+  // ── QR code (right side of header) ────────────────────────────────────────
+  const qrData = qrUrl ? await makeQRDataUrl(qrUrl) : null
+  const QR_SIZE = 26
+  const QR_X = PAGE_W - QR_SIZE - 6
+  const QR_Y = 5
+
+  if (qrData) {
+    // White background pill behind QR
+    pdf.setFillColor(255, 255, 255)
+    pdf.roundedRect(QR_X - 2, QR_Y - 1, QR_SIZE + 4, QR_SIZE + 10, 2, 2, 'F')
+
+    pdf.addImage(qrData, 'PNG', QR_X, QR_Y, QR_SIZE, QR_SIZE, undefined, 'FAST')
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(5.5)
+    pdf.setTextColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.text('Scan to verify', QR_X + QR_SIZE / 2, QR_Y + QR_SIZE + 6, { align: 'center' })
+  }
+
+  // ── Document type badge (below header, left) ───────────────────────────────
+  pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+  pdf.roundedRect(14, HEADER_H + 3, 50, 9, 2, 2, 'F')
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setTextColor(255, 255, 255)
+  pdf.text(docTitle, 39, HEADER_H + 9, { align: 'center' })
+
+  // Reset text colour
+  pdf.setTextColor(0, 0, 0)
+
+  return HEADER_H + 16 // first usable Y position below header
+}
+
+/** Draw a thin coloured footer at the bottom of every page */
+function drawFooter(pdf: jsPDF, pageNumber: number, totalPages: number) {
+  const PAGE_W = 210
+  const PAGE_H = 297
+
+  pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+  pdf.rect(0, PAGE_H - 10, PAGE_W, 10, 'F')
+
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(8)
+  pdf.setTextColor(255, 255, 255)
+  pdf.text('Thank you for your business!', PAGE_W / 2, PAGE_H - 4, { align: 'center' })
+  pdf.text(`Page ${pageNumber} of ${totalPages}`, PAGE_W - 8, PAGE_H - 4, { align: 'right' })
+}
+
+// ─── Public utilities ─────────────────────────────────────────────────────────
+
 /**
  * Generate PDF from HTML element
- * @param elementId - ID of HTML element to convert
- * @param filename - Name of PDF file
  */
 export async function generatePDFFromHTML(
   elementId: string,
@@ -17,23 +154,12 @@ export async function generatePDFFromHTML(
       return null
     }
 
-    // Convert HTML to canvas
-    const canvas = await html2canvas(element, {
-      scale: 2, // Higher quality
-      useCORS: true,
-      logging: false,
-    })
-
-    // Create PDF
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false })
     const imgData = canvas.toDataURL('image/png')
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    })
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    const imgWidth = 210 // A4 width in mm
-    const pageHeight = 297 // A4 height in mm
+    const imgWidth = 210
+    const pageHeight = 297
     const imgHeight = (canvas.height * imgWidth) / canvas.width
     let heightLeft = imgHeight
     let position = 0
@@ -41,7 +167,6 @@ export async function generatePDFFromHTML(
     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
     heightLeft -= pageHeight
 
-    // Add new pages if content exceeds one page
     while (heightLeft >= 0) {
       position = heightLeft - imgHeight
       pdf.addPage()
@@ -49,7 +174,6 @@ export async function generatePDFFromHTML(
       heightLeft -= pageHeight
     }
 
-    // Return as blob
     return pdf.output('blob')
   } catch (error) {
     console.error('PDF generation error:', error)
@@ -58,9 +182,7 @@ export async function generatePDFFromHTML(
 }
 
 /**
- * Download PDF
- * @param blob - PDF blob
- * @param filename - Name of file
+ * Trigger a browser download for a Blob
  */
 export function downloadPDF(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -73,106 +195,187 @@ export function downloadPDF(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-/**
- * Generate Quotation PDF
- */
+// ─── Quotation PDF ────────────────────────────────────────────────────────────
+
 export async function generateQuotationPDF(quotation: any): Promise<Blob | null> {
   try {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    })
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    // Set font
-    pdf.setFont('helvetica')
+    // Build QR URL
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const qrUrl = `${origin}/quotations/${quotation.id}`
 
     // Header
-    pdf.setFontSize(20)
-    pdf.setTextColor(9, 172, 173) // #09ACAD
-    pdf.text('QUOTATION', 105, 20, { align: 'center' })
+    let yPos = await drawHeader(pdf, 'QUOTATION', qrUrl)
 
-    // Company Info (get from settings)
-    pdf.setFontSize(10)
-    pdf.setTextColor(0, 0, 0)
-    pdf.text('Premier Service Management', 105, 30, { align: 'center' })
-    pdf.text('info@premierservice.com | +1-555-0100', 105, 35, { align: 'center' })
-
-    // Quotation Details
-    pdf.setFontSize(12)
-    pdf.text(`Quotation #: ${quotation.quotation_number}`, 20, 50)
-    pdf.text(`Date: ${new Date(quotation.created_at).toLocaleDateString()}`, 20, 57)
-    pdf.text(`Valid Until: ${new Date(quotation.valid_until).toLocaleDateString()}`, 20, 64)
-
-    // Customer Details
-    pdf.text('BILL TO:', 20, 75)
-    pdf.setFontSize(10)
-    if (quotation.booking?.customer) {
-      const customer = quotation.booking.customer
-      pdf.text(customer.name || 'N/A', 20, 82)
-      pdf.text(customer.email || '', 20, 87)
-      pdf.text(customer.phone || '', 20, 92)
-      pdf.text(customer.address || '', 20, 97, { maxWidth: 80 })
-    }
-
-    // Service Details
-    pdf.setFontSize(12)
-    pdf.text('SERVICE DETAILS:', 20, 115)
-    
-    // Table header
-    pdf.setFillColor(9, 172, 173)
-    pdf.rect(20, 120, 170, 8, 'F')
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(10)
-    pdf.text('Description', 25, 125)
-    pdf.text('Amount', 170, 125, { align: 'right' })
-
-    // Service item
-    pdf.setTextColor(0, 0, 0)
-    pdf.text(quotation.booking?.service?.name || 'Service', 25, 135)
-    pdf.text(`RWF ${quotation.total_amount?.toFixed(2)}`, 185, 135, { align: 'right' })
-
-    // Totals
-    let yPos = 150
-    pdf.line(20, yPos, 190, yPos)
-    yPos += 7
-    
-    pdf.text('Subtotal:', 130, yPos)
-    pdf.text(`RWF ${quotation.total_amount?.toFixed(2)}`, 185, yPos, { align: 'right' })
-    yPos += 7
-    
-    pdf.text(`Tax (${(quotation.tax / quotation.total_amount * 100).toFixed(0)}%):`, 130, yPos)
-    pdf.text(`RWF ${quotation.tax?.toFixed(2)}`, 185, yPos, { align: 'right' })
-    yPos += 7
-    
-    if (quotation.discount > 0) {
-      pdf.text('Discount:', 130, yPos)
-      pdf.text(`-RWF ${quotation.discount?.toFixed(2)}`, 185, yPos, { align: 'right' })
-      yPos += 7
-    }
-    
-    pdf.setFontSize(12)
+    // ── Quotation meta ─────────────────────────────────────────────────────
     pdf.setFont('helvetica', 'bold')
-    pdf.text('TOTAL:', 130, yPos)
-    pdf.text(`RWF ${quotation.final_amount?.toFixed(2)}`, 185, yPos, { align: 'right' })
+    pdf.setFontSize(9)
+    pdf.setTextColor(80, 80, 80)
 
-    // Terms & Conditions
-    pdf.setFont('helvetica', 'normal')
+    // Left column – quotation info
+    const metaLeft = [
+      ['Quotation #:', quotation.quotation_number || '—'],
+      ['Date:', new Date(quotation.created_at).toLocaleDateString()],
+      ['Valid Until:', new Date(quotation.valid_until).toLocaleDateString()],
+    ]
+    let metaY = yPos
+    for (const [label, value] of metaLeft) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(label, 20, metaY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(String(value), 55, metaY)
+      metaY += 6
+    }
+
+    // Status badge (right)
+    const statusColours: Record<string, [number, number, number]> = {
+      sent: [59, 130, 246],
+      accepted: [34, 197, 94],
+      rejected: [239, 68, 68],
+      expired: [107, 114, 128],
+    }
+    const [sr, sg, sb] = statusColours[quotation.status] ?? [107, 114, 128]
+    pdf.setFillColor(sr, sg, sb)
+    pdf.roundedRect(148, yPos - 4, 42, 8, 2, 2, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text((quotation.status ?? 'sent').toUpperCase(), 169, yPos + 1.5, { align: 'center' })
+    pdf.setTextColor(0, 0, 0)
+
+    yPos = metaY + 4
+
+    // Divider
+    pdf.setDrawColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.setLineWidth(0.4)
+    pdf.line(20, yPos, 190, yPos)
+    yPos += 6
+
+    // ── Bill To ────────────────────────────────────────────────────────────
+    pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(10)
-    yPos += 15
+    pdf.setTextColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.text('BILL TO', 20, yPos)
+    yPos += 5
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(30, 30, 30)
+
+    if (quotation.booking?.customer) {
+      const c = quotation.booking.customer
+      if (c.name)    { pdf.setFont('helvetica', 'bold'); pdf.text(c.name, 20, yPos); yPos += 5; pdf.setFont('helvetica', 'normal') }
+      if (c.email)   { pdf.text(c.email, 20, yPos); yPos += 5 }
+      if (c.phone)   { pdf.text(c.phone, 20, yPos); yPos += 5 }
+      if (c.address) { pdf.text(c.address, 20, yPos, { maxWidth: 90 }); yPos += 8 }
+    } else {
+      pdf.text('N/A', 20, yPos); yPos += 5
+    }
+
+    // Service name (right side of bill-to)
+    if (quotation.booking?.service?.name) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(9)
+      pdf.setTextColor(80, 80, 80)
+      pdf.text('Service:', 130, yPos - 15)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(quotation.booking.service.name, 155, yPos - 15)
+    }
+
+    yPos += 4
+
+    // ── Service table ──────────────────────────────────────────────────────
+    pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.rect(20, yPos, 170, 8, 'F')
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.text('Description', 25, yPos + 5.5)
+    pdf.text('Qty', 120, yPos + 5.5)
+    pdf.text('Unit Price', 145, yPos + 5.5)
+    pdf.text('Amount', 182, yPos + 5.5, { align: 'right' })
+    yPos += 8
+
+    pdf.setTextColor(30, 30, 30)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+
+    // Alternating row bg
+    pdf.setFillColor(245, 250, 251)
+    pdf.rect(20, yPos, 170, 7, 'F')
+
+    const serviceName = quotation.booking?.service?.name || 'Service'
+    pdf.text(serviceName, 25, yPos + 5)
+    pdf.text('1', 122, yPos + 5)
+    pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, 147, yPos + 5)
+    pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, 182, yPos + 5, { align: 'right' })
+    yPos += 7
+
+    // Row border
+    pdf.setDrawColor(220, 220, 220)
+    pdf.setLineWidth(0.2)
+    pdf.line(20, yPos, 190, yPos)
+    yPos += 6
+
+    // ── Totals ─────────────────────────────────────────────────────────────
+    const col1 = 130
+    const col2 = 182
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(60, 60, 60)
+
+    pdf.text('Subtotal:', col1, yPos)
+    pdf.text(`RWF ${(quotation.total_amount ?? 0).toFixed(2)}`, col2, yPos, { align: 'right' })
+    yPos += 6
+
+    const taxRate = quotation.total_amount > 0
+      ? ((quotation.tax / quotation.total_amount) * 100).toFixed(0)
+      : '0'
+    pdf.text(`Tax (${taxRate}%):`, col1, yPos)
+    pdf.text(`RWF ${(quotation.tax ?? 0).toFixed(2)}`, col2, yPos, { align: 'right' })
+    yPos += 6
+
+    if ((quotation.discount ?? 0) > 0) {
+      pdf.setTextColor(34, 197, 94)
+      pdf.text('Discount:', col1, yPos)
+      pdf.text(`-RWF ${quotation.discount.toFixed(2)}`, col2, yPos, { align: 'right' })
+      yPos += 6
+    }
+
+    // Total band
+    pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.roundedRect(118, yPos - 1, 74, 10, 2, 2, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text('TOTAL:', col1, yPos + 6.5)
+    pdf.text(`RWF ${(quotation.final_amount ?? 0).toFixed(2)}`, col2, yPos + 6.5, { align: 'right' })
+    yPos += 16
+
+    // ── Terms ──────────────────────────────────────────────────────────────
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
     pdf.text('Terms & Conditions:', 20, yPos)
     yPos += 5
-    pdf.setFontSize(9)
-    pdf.text('1. This quotation is valid for 7 days from the date of issue.', 20, yPos)
-    yPos += 5
-    pdf.text('2. Payment is due upon completion of service.', 20, yPos)
-    yPos += 5
-    pdf.text('3. Prices are inclusive of applicable taxes.', 20, yPos)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8)
+    pdf.setTextColor(80, 80, 80)
+    const terms = [
+      '1. This quotation is valid for the period stated above.',
+      '2. Payment is due upon completion of service.',
+      '3. Prices are inclusive of applicable taxes.',
+      '4. Please quote the quotation number in all correspondence.',
+    ]
+    for (const line of terms) {
+      pdf.text(line, 20, yPos)
+      yPos += 5
+    }
 
     // Footer
-    pdf.setFontSize(8)
-    pdf.setTextColor(128, 128, 128)
-    pdf.text('Thank you for your business!', 105, 280, { align: 'center' })
+    drawFooter(pdf, 1, 1)
 
     return pdf.output('blob')
   } catch (error) {
@@ -181,128 +384,174 @@ export async function generateQuotationPDF(quotation: any): Promise<Blob | null>
   }
 }
 
-/**
- * Generate Invoice PDF
- */
+// ─── Invoice PDF ──────────────────────────────────────────────────────────────
+
 export async function generateInvoicePDF(invoice: any): Promise<Blob | null> {
   try {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    })
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-    // Set font
-    pdf.setFont('helvetica')
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const qrUrl = `${origin}/invoice/${invoice.id}`
 
     // Header
-    pdf.setFontSize(20)
-    pdf.setTextColor(9, 172, 173) // #09ACAD
-    pdf.text('INVOICE', 105, 20, { align: 'center' })
+    let yPos = await drawHeader(pdf, 'INVOICE', qrUrl)
 
-    // Company Info
-    pdf.setFontSize(10)
-    pdf.setTextColor(0, 0, 0)
-    pdf.text('Premier Service Management', 105, 30, { align: 'center' })
-    pdf.text('info@premierservice.com | +1-555-0100', 105, 35, { align: 'center' })
+    // ── Invoice meta ───────────────────────────────────────────────────────
+    const metaLeft = [
+      ['Invoice #:', invoice.invoice_number || '—'],
+      ['Date:', new Date(invoice.created_at).toLocaleDateString()],
+      ['Due Date:', new Date(invoice.due_date).toLocaleDateString()],
+    ]
+    let metaY = yPos
+    pdf.setFontSize(9)
+    for (const [label, value] of metaLeft) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(80, 80, 80)
+      pdf.text(label, 20, metaY)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(30, 30, 30)
+      pdf.text(String(value), 55, metaY)
+      metaY += 6
+    }
 
-    // Invoice Details
-    pdf.setFontSize(12)
-    pdf.text(`Invoice #: ${invoice.invoice_number}`, 20, 50)
-    pdf.text(`Date: ${new Date(invoice.created_at).toLocaleDateString()}`, 20, 57)
-    pdf.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 20, 64)
-    
     // Status badge
-    const statusColors: Record<string, number[]> = {
+    const statusColours: Record<string, [number, number, number]> = {
       paid: [34, 197, 94],
       pending: [234, 179, 8],
       overdue: [239, 68, 68],
     }
-    const color = statusColors[invoice.status] || [128, 128, 128]
-    pdf.setFillColor(color[0], color[1], color[2])
-    pdf.roundedRect(150, 48, 35, 8, 2, 2, 'F')
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(10)
-    pdf.text(invoice.status.toUpperCase(), 167.5, 53, { align: 'center' })
-
-    // Customer Details
-    pdf.setTextColor(0, 0, 0)
-    pdf.setFontSize(12)
-    pdf.text('BILL TO:', 20, 75)
-    pdf.setFontSize(10)
-    if (invoice.job?.booking?.customer) {
-      const customer = invoice.job.booking.customer
-      pdf.text(customer.name || 'N/A', 20, 82)
-      pdf.text(customer.email || '', 20, 87)
-      pdf.text(customer.phone || '', 20, 92)
-      pdf.text(customer.address || '', 20, 97, { maxWidth: 80 })
-    }
-
-    // Service Details
-    pdf.setFontSize(12)
-    pdf.text('SERVICES & CHARGES:', 20, 115)
-    
-    // Table header
-    pdf.setFillColor(9, 172, 173)
-    pdf.rect(20, 120, 170, 8, 'F')
-    pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(10)
-    pdf.text('Description', 25, 125)
-    pdf.text('Amount', 170, 125, { align: 'right' })
-
-    // Items
-    let yPos = 135
-    pdf.setTextColor(0, 0, 0)
-    
-    // Service charge
-    if (invoice.job?.booking?.service) {
-      pdf.text(invoice.job.booking.service.name, 25, yPos)
-      pdf.text(`RWF ${invoice.total_amount?.toFixed(2)}`, 185, yPos, { align: 'right' })
-      yPos += 7
-    }
-
-    // Totals
-    yPos += 10
-    pdf.line(20, yPos, 190, yPos)
-    yPos += 7
-    
-    pdf.text('Subtotal:', 130, yPos)
-    pdf.text(`RWF ${invoice.total_amount?.toFixed(2)}`, 185, yPos, { align: 'right' })
-    yPos += 7
-    
-    pdf.text(`Tax:`, 130, yPos)
-    pdf.text(`RWF ${invoice.tax?.toFixed(2)}`, 185, yPos, { align: 'right' })
-    yPos += 7
-    
-    if (invoice.discount > 0) {
-      pdf.text('Discount:', 130, yPos)
-      pdf.text(`-RWF ${invoice.discount?.toFixed(2)}`, 185, yPos, { align: 'right' })
-      yPos += 7
-    }
-    
-    pdf.setFontSize(12)
+    const [sr, sg, sb] = statusColours[invoice.status] ?? [107, 114, 128]
+    pdf.setFillColor(sr, sg, sb)
+    pdf.roundedRect(148, yPos - 4, 42, 8, 2, 2, 'F')
     pdf.setFont('helvetica', 'bold')
-    pdf.text('TOTAL DUE:', 130, yPos)
-    pdf.text(`RWF ${invoice.final_amount?.toFixed(2)}`, 185, yPos, { align: 'right' })
+    pdf.setFontSize(9)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text((invoice.status ?? 'pending').toUpperCase(), 169, yPos + 1.5, { align: 'center' })
+    pdf.setTextColor(0, 0, 0)
 
-    // Payment Instructions
-    pdf.setFont('helvetica', 'normal')
+    yPos = metaY + 4
+
+    // Divider
+    pdf.setDrawColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.setLineWidth(0.4)
+    pdf.line(20, yPos, 190, yPos)
+    yPos += 6
+
+    // ── Bill To ────────────────────────────────────────────────────────────
+    pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(10)
-    yPos += 15
+    pdf.setTextColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.text('BILL TO', 20, yPos)
+    yPos += 5
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(30, 30, 30)
+
+    const customer = invoice.job?.booking?.customer
+    if (customer) {
+      if (customer.name)    { pdf.setFont('helvetica', 'bold'); pdf.text(customer.name, 20, yPos); yPos += 5; pdf.setFont('helvetica', 'normal') }
+      if (customer.email)   { pdf.text(customer.email, 20, yPos); yPos += 5 }
+      if (customer.phone)   { pdf.text(customer.phone, 20, yPos); yPos += 5 }
+      if (customer.address) { pdf.text(customer.address, 20, yPos, { maxWidth: 90 }); yPos += 8 }
+    } else {
+      pdf.text('N/A', 20, yPos); yPos += 5
+    }
+
+    // Job number right side
+    if (invoice.job?.job_number) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(9)
+      pdf.setTextColor(80, 80, 80)
+      pdf.text('Job #:', 130, yPos - 15)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(invoice.job.job_number, 148, yPos - 15)
+    }
+
+    yPos += 4
+
+    // ── Services table ─────────────────────────────────────────────────────
+    pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.rect(20, yPos, 170, 8, 'F')
+    pdf.setTextColor(255, 255, 255)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
+    pdf.text('Description', 25, yPos + 5.5)
+    pdf.text('Amount', 182, yPos + 5.5, { align: 'right' })
+    yPos += 8
+
+    pdf.setTextColor(30, 30, 30)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+
+    const rows: [string, number][] = []
+    const serviceName = invoice.job?.booking?.service?.name
+    if (serviceName) rows.push([serviceName, invoice.total_amount ?? 0])
+
+    rows.forEach(([desc, amount], i) => {
+      if (i % 2 === 0) {
+        pdf.setFillColor(245, 250, 251)
+        pdf.rect(20, yPos, 170, 7, 'F')
+      }
+      pdf.text(desc, 25, yPos + 5)
+      pdf.text(`RWF ${amount.toFixed(2)}`, 182, yPos + 5, { align: 'right' })
+      yPos += 7
+    })
+
+    pdf.setDrawColor(220, 220, 220)
+    pdf.setLineWidth(0.2)
+    pdf.line(20, yPos, 190, yPos)
+    yPos += 6
+
+    // ── Totals ─────────────────────────────────────────────────────────────
+    const col1 = 130
+    const col2 = 182
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(60, 60, 60)
+
+    pdf.text('Subtotal:', col1, yPos)
+    pdf.text(`RWF ${(invoice.total_amount ?? 0).toFixed(2)}`, col2, yPos, { align: 'right' })
+    yPos += 6
+
+    pdf.text('Tax:', col1, yPos)
+    pdf.text(`RWF ${(invoice.tax ?? 0).toFixed(2)}`, col2, yPos, { align: 'right' })
+    yPos += 6
+
+    if ((invoice.discount ?? 0) > 0) {
+      pdf.setTextColor(34, 197, 94)
+      pdf.text('Discount:', col1, yPos)
+      pdf.text(`-RWF ${invoice.discount.toFixed(2)}`, col2, yPos, { align: 'right' })
+      yPos += 6
+    }
+
+    pdf.setFillColor(BRAND_R, BRAND_G, BRAND_B)
+    pdf.roundedRect(118, yPos - 1, 74, 10, 2, 2, 'F')
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(11)
+    pdf.setTextColor(255, 255, 255)
+    pdf.text('TOTAL DUE:', col1, yPos + 6.5)
+    pdf.text(`RWF ${(invoice.final_amount ?? 0).toFixed(2)}`, col2, yPos + 6.5, { align: 'right' })
+    yPos += 16
+
+    // ── Payment instructions ───────────────────────────────────────────────
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(9)
     pdf.text('Payment Instructions:', 20, yPos)
     yPos += 5
-    pdf.setFontSize(9)
-    pdf.text('Bank: Premier Bank | Account: 1234567890', 20, yPos)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8)
+    pdf.setTextColor(80, 80, 80)
+    pdf.text('Bank: Premier Bank  |  Account: 1234567890  |  Branch: Kigali', 20, yPos)
     yPos += 5
-    pdf.text('Mobile Money: +1-555-0100', 20, yPos)
+    pdf.text('Mobile Money: +250 788 000 000', 20, yPos)
     yPos += 5
-    pdf.text('Or scan QR code for online payment', 20, yPos)
+    pdf.text('Or scan the QR code in the header for online payment.', 20, yPos)
 
     // Footer
-    pdf.setFontSize(8)
-    pdf.setTextColor(128, 128, 128)
-    pdf.text('Thank you for your business!', 105, 280, { align: 'center' })
-    pdf.text('Payment terms: Net 30 days', 105, 285, { align: 'center' })
+    drawFooter(pdf, 1, 1)
 
     return pdf.output('blob')
   } catch (error) {

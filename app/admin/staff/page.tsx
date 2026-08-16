@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Edit, Trash2, UserCheck, UserX, DollarSign, X } from "lucide-react";
 
+type RateUnit = "per_hour" | "per_day" | "per_month" | "lump_sum";
+
+const RATE_UNIT_LABELS: Record<RateUnit, string> = {
+  per_hour: "Per Hour",
+  per_day: "Per Day",
+  per_month: "Per Month",
+  lump_sum: "Lump Sum",
+};
+
 interface Staff {
   id: string;
   name: string;
@@ -10,6 +19,7 @@ interface Staff {
   phone: string;
   role: string;
   hourly_rate: number;
+  rate_unit: RateUnit;
   is_active: boolean;
   created_at?: string;
 }
@@ -30,6 +40,7 @@ export default function StaffPage() {
     phone: "",
     role: "",
     hourly_rate: "",
+    rate_unit: "per_hour" as RateUnit,
     is_active: true,
     password: "",
   });
@@ -65,6 +76,7 @@ export default function StaffPage() {
         body: JSON.stringify({
           ...formData,
           hourly_rate: parseFloat(formData.hourly_rate),
+          rate_unit: formData.rate_unit,
         }),
       });
 
@@ -93,6 +105,7 @@ export default function StaffPage() {
         body: JSON.stringify({
           ...formData,
           hourly_rate: parseFloat(formData.hourly_rate),
+          rate_unit: formData.rate_unit,
         }),
       });
 
@@ -139,7 +152,9 @@ export default function StaffPage() {
       phone: member.phone,
       role: member.role,
       hourly_rate: member.hourly_rate.toString(),
+      rate_unit: member.rate_unit || "per_hour",
       is_active: member.is_active,
+      password: "",
     });
     setShowEditModal(true);
   };
@@ -151,6 +166,7 @@ export default function StaffPage() {
       phone: "",
       role: "",
       hourly_rate: "",
+      rate_unit: "per_hour",
       is_active: true,
       password: "",
     });
@@ -231,10 +247,10 @@ export default function StaffPage() {
         </div>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-gray-600 text-sm font-semibold mb-2">
-            Avg Rate
+            Avg Rate (RWF)
           </h3>
           <p className="text-3xl font-bold text-teal-600">
-            RWF {staff.length > 0 ? (staff.reduce((sum, s) => sum + s.hourly_rate, 0) / staff.length).toFixed(0) : 0}
+            {staff.length > 0 ? (staff.reduce((sum, s) => sum + s.hourly_rate, 0) / staff.length).toLocaleString(undefined, { maximumFractionDigits: 0 }) : 0}
           </p>
         </div>
       </div>
@@ -339,10 +355,13 @@ export default function StaffPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Hourly Rate</p>
+                  <p className="text-sm text-gray-600">Rate (RWF)</p>
                   <p className="text-lg font-bold text-teal-600 flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    {member.hourly_rate}
+                    {member.hourly_rate.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {RATE_UNIT_LABELS[member.rate_unit] || "Per Hour"}
                   </p>
                 </div>
                 <div>
@@ -511,19 +530,34 @@ function StaffModal({
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Hourly Rate (RWF) *
+                Rate (RWF) *
               </label>
-              <input
-                type="number"
-                required
-                step="0.01"
-                value={formData.hourly_rate}
-                onChange={(e) =>
-                  setFormData({ ...formData, hourly_rate: e.target.value })
-                }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                placeholder="25.00"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  required
+                  step="0.01"
+                  min="0"
+                  value={formData.hourly_rate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, hourly_rate: e.target.value })
+                  }
+                  className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                  placeholder="0.00"
+                />
+                <select
+                  value={formData.rate_unit}
+                  onChange={(e) =>
+                    setFormData({ ...formData, rate_unit: e.target.value as RateUnit })
+                  }
+                  className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:border-transparent bg-white text-sm font-medium text-gray-700"
+                >
+                  <option value="per_hour">Per Hour</option>
+                  <option value="per_day">Per Day</option>
+                  <option value="per_month">Per Month</option>
+                  <option value="lump_sum">Lump Sum</option>
+                </select>
+              </div>
             </div>
           </div>
 

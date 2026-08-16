@@ -10,8 +10,8 @@ export async function DELETE(
     const { equipmentId } = await params;
 
     // Get equipment details before deleting
-    const { data: jobEquipment } = await supabase
-      .from('job_equipment')
+    const jobEquipQuery = supabase.from('job_equipment') as any
+    const { data: jobEquipment } = await jobEquipQuery
       .select('equipment_id')
       .eq('id', equipmentId)
       .single();
@@ -28,8 +28,8 @@ export async function DELETE(
 
     // Update equipment status back to available
     if (jobEquipment) {
-      await supabase
-        .from('equipment')
+      const equipmentQuery = supabase.from('equipment') as any
+      await equipmentQuery
         .update({ status: 'available' })
         .eq('id', jobEquipment.equipment_id);
     }

@@ -10,8 +10,8 @@ export async function POST(
     const { id: jobId } = await params;
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('job_materials')
+    const query = supabase.from('job_materials') as any
+    const { data, error } = await query
       .insert({
         job_id: jobId,
         inventory_id: body.inventory_id,
@@ -27,7 +27,7 @@ export async function POST(
     }
 
     // Update inventory quantity
-    await supabase.rpc('update_inventory_quantity', {
+    await (supabase as any).rpc('update_inventory_quantity', {
       p_inventory_id: body.inventory_id,
       p_quantity_change: -body.quantity,
     });

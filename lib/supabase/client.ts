@@ -11,7 +11,8 @@ export const supabase = createBrowserClient(
 // Lazy-loaded to avoid trying to access server-only env vars in the browser
 let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
-export const getSupabaseAdmin = () => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getSupabaseAdmin = (): any => {
   if (!_supabaseAdmin) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,7 +33,8 @@ export const getSupabaseAdmin = () => {
 };
 
 // Backwards compatibility - but this will throw an error if used in client components
-export const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabaseAdmin: any = new Proxy({} as ReturnType<typeof createClient>, {
   get(_target, prop) {
     return getSupabaseAdmin()[prop as keyof ReturnType<typeof createClient>];
   }

@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
       user_id: userId, // Link to auth user if created
     }
 
-    const { data, error } = await supabase
-      .from('staff')
+    const query = supabase.from('staff') as any
+    const { data, error } = await query
       .insert(staffRecord)
       .select()
       .single()

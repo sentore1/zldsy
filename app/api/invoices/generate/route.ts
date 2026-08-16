@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get job details with all related data
-    const { data: job, error: jobError } = await supabase
-      .from('jobs')
+    const query = supabase.from('jobs') as any
+    const { data: job, error: jobError } = await query
       .select(`
         *,
         booking:bookings(
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
     const subtotal = baseServiceCost + materialsCost + laborCost + equipmentCost
     
     // Get tax rate from settings (default 10%)
-    const { data: taxSetting } = await supabase
-      .from('settings')
+    const taxQuery = supabase.from('settings') as any
+    const { data: taxSetting } = await taxQuery
       .select('value')
       .eq('key', 'tax_rate')
       .single()
@@ -116,8 +116,8 @@ export async function POST(request: NextRequest) {
     const finalAmount = subtotal + tax - discount
 
     // Get invoice due days from settings (default 30 days)
-    const { data: dueDaysSetting } = await supabase
-      .from('settings')
+    const dueDaysQuery = supabase.from('settings') as any
+    const { data: dueDaysSetting } = await dueDaysQuery
       .select('value')
       .eq('key', 'invoice_due_days')
       .single()
@@ -131,8 +131,8 @@ export async function POST(request: NextRequest) {
     const invoiceNumber = `INV-${timestamp}`
 
     // Create invoice
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
+    const invoiceQuery = supabase.from('invoices') as any
+    const { data: invoice, error: invoiceError } = await invoiceQuery
       .insert({
         job_id,
         invoice_number: invoiceNumber,
@@ -170,8 +170,8 @@ export async function POST(request: NextRequest) {
 
     // Update invoice with QR code
     if (qrCodeDataUrl) {
-      await supabase
-        .from('invoices')
+      const qrQuery = supabase.from('invoices') as any
+      await qrQuery
         .update({ qr_code: qrCodeDataUrl })
         .eq('id', invoice.id)
     }

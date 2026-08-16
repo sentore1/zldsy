@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin()
     const body = await request.json()
 
-    const { data, error } = await supabase
-      .from('customers')
+    const query = supabase.from('customers') as any
+    const { data, error } = await query
       .insert(body)
       .select()
       .single()

@@ -10,8 +10,8 @@ export async function POST(
     const { id: jobId } = await params;
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('job_equipment')
+    const query = supabase.from('job_equipment') as any
+    const { data, error } = await query
       .insert({
         job_id: jobId,
         equipment_id: body.equipment_id,
@@ -27,8 +27,8 @@ export async function POST(
     }
 
     // Update equipment status to in_use
-    await supabase
-      .from('equipment')
+    const equipmentQuery = supabase.from('equipment') as any
+    await equipmentQuery
       .update({ status: 'in_use' })
       .eq('id', body.equipment_id);
 

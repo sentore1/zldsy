@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Search, Download, Eye, DollarSign, AlertCircle, X, Loader2, CreditCard } from "lucide-react";
+import { generateInvoicePDF, downloadPDF } from "@/lib/utils/pdf-generator";
 
 interface Invoice {
   id: string;
@@ -56,6 +57,7 @@ export default function InvoicesPage() {
     transaction_reference: "",
     notes: "",
   });
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     job_id: "",
     total_amount: "",
@@ -197,135 +199,24 @@ export default function InvoicesPage() {
 
   const handleDownloadInvoice = async (invoice: Invoice) => {
     try {
+      setDownloadingId(invoice.id);
+
+      // Fetch full invoice data (includes nested job → booking → customer/service)
       const response = await fetch(`/api/invoices/${invoice.id}`);
       const data = await response.json();
       const invoiceData = data.invoice;
 
-      // Import jsPDF dynamically
-      const { jsPDF } = await import("jspdf");
-      const QRCode = (await import("qrcode")).default;
-      
-      const doc = new jsPDF();
-
-      // Generate QR Code for invoice URL
-      const invoiceUrl = `${window.location.origin}/invoice/${invoice.id}`;
-      const qrDataUrl = await QRCode.toDataURL(invoiceUrl, {
-        width: 200,
-        margin: 2,
-      });
-
-      // Header
-      doc.setFontSize(24);
-      doc.setFont("helvetica", "bold");
-      doc.text("INVOICE", 105, 20, { align: "center" });
-
-      // Company Info
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("Premier Service Management", 20, 35);
-      doc.text("100 Business Park Drive, Suite 200", 20, 40);
-      doc.text("New York, NY 10001", 20, 45);
-      doc.text("Phone: +1-555-0100", 20, 50);
-
-      // Invoice Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Invoice Number:", 140, 35);
-      doc.text("Date:", 140, 40);
-      doc.text("Due Date:", 140, 45);
-      doc.text("Status:", 140, 50);
-
-      doc.setFont("helvetica", "normal");
-      doc.text(invoiceData.invoice_number, 175, 35);
-      doc.text(new Date(invoiceData.created_at).toLocaleDateString(), 175, 40);
-      doc.text(new Date(invoiceData.due_date).toLocaleDateString(), 175, 45);
-      doc.text(invoiceData.status.toUpperCase(), 175, 50);
-
-      // Customer Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Bill To:", 20, 65);
-      doc.setFont("helvetica", "normal");
-      const customerName = invoiceData.job?.booking?.customer?.name || '';
-      const customerAddress = invoiceData.job?.booking?.customer?.address || '';
-      const customerPhone = invoiceData.job?.booking?.customer?.phone || '';
-      const customerEmail = invoiceData.job?.booking?.customer?.email || '';
-
-      doc.text(customerName, 20, 70);
-      if (customerAddress) doc.text(customerAddress, 20, 75);
-      if (customerPhone) doc.text(customerPhone, 20, 80);
-      if (customerEmail) doc.text(customerEmail, 20, 85);
-
-      // Service Details
-      doc.setFont("helvetica", "bold");
-      doc.text("Service Details:", 20, 100);
-      doc.setFont("helvetica", "normal");
-      const serviceName = invoiceData.job?.booking?.service?.name || 'N/A';
-      const jobNumber = invoiceData.job?.job_number || 'N/A';
-      doc.text(`Job Number: ${jobNumber}`, 20, 105);
-      doc.text(`Service: ${serviceName}`, 20, 110);
-
-      // Table Header
-      doc.setFillColor(240, 240, 240);
-      doc.rect(20, 125, 170, 8, "F");
-      doc.setFont("helvetica", "bold");
-      doc.text("Description", 25, 130);
-      doc.text("Amount", 170, 130);
-
-      // Table Content
-      doc.setFont("helvetica", "normal");
-      let yPos = 140;
-
-      doc.text("Service Fee", 25, yPos);
-      doc.text(`RWF ${invoiceData.total_amount.toFixed(2)}`, 170, yPos);
-      yPos += 7;
-
-      if (invoiceData.tax && invoiceData.tax > 0) {
-        doc.text("Tax", 25, yPos);
-        doc.text(`RWF ${invoiceData.tax.toFixed(2)}`, 170, yPos);
-        yPos += 7;
+      const pdfBlob = await generateInvoicePDF(invoiceData);
+      if (pdfBlob) {
+        downloadPDF(pdfBlob, `${invoiceData.invoice_number}.pdf`);
+      } else {
+        alert("Failed to generate PDF. Please try again.");
       }
-
-      if (invoiceData.discount && invoiceData.discount > 0) {
-        doc.text("Discount", 25, yPos);
-        doc.text(`-RWF ${invoiceData.discount.toFixed(2)}`, 170, yPos);
-        yPos += 7;
-      }
-
-      // Total Line
-      yPos += 5;
-      doc.line(20, yPos, 190, yPos);
-      yPos += 7;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("TOTAL:", 25, yPos);
-      const finalAmount = invoiceData.final_amount || invoiceData.total_amount;
-      doc.text(`RWF ${finalAmount.toFixed(2)}`, 170, yPos);
-
-      // Payment Status
-      if (invoiceData.paid_date) {
-        yPos += 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 128, 0);
-        doc.text(`Paid on: ${new Date(invoiceData.paid_date).toLocaleDateString()}`, 25, yPos);
-        doc.setTextColor(0, 0, 0);
-      }
-
-      // QR Code
-      doc.addImage(qrDataUrl, "PNG", 160, yPos + 10, 30, 30);
-      doc.setFontSize(8);
-      doc.text("Scan to view", 165, yPos + 45);
-
-      // Footer
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "italic");
-      doc.text("Thank you for your business!", 105, 280, { align: "center" });
-
-      // Save PDF
-      doc.save(`${invoiceData.invoice_number}.pdf`);
-
-      alert("Invoice PDF downloaded successfully!");
     } catch (error) {
       console.error("Failed to download invoice:", error);
       alert("Failed to download invoice");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -625,10 +516,13 @@ export default function InvoicesPage() {
                         </button>
                         <button
                           onClick={() => handleDownloadInvoice(invoice)}
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition disabled:opacity-50"
                           title="Download PDF"
+                          disabled={downloadingId === invoice.id}
                         >
-                          <Download className="w-4 h-4" />
+                          {downloadingId === invoice.id
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Download className="w-4 h-4" />}
                         </button>
                         {invoice.status !== "paid" && (
                           <button 
@@ -881,10 +775,13 @@ export default function InvoicesPage() {
                 </button>
                 <button
                   onClick={() => handleDownloadInvoice(selectedInvoice)}
-                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                  disabled={downloadingId === selectedInvoice.id}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-4 h-4" />
-                  Download PDF
+                  {downloadingId === selectedInvoice.id
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Download className="w-4 h-4" />}
+                  {downloadingId === selectedInvoice.id ? "Generating..." : "Download PDF"}
                 </button>
                 {selectedInvoice.status !== "paid" && (
                   <button

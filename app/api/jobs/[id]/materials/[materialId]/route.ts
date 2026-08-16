@@ -10,8 +10,8 @@ export async function DELETE(
     const { materialId } = await params;
 
     // Get material details before deleting
-    const { data: material } = await supabase
-      .from('job_materials')
+    const materialQuery = supabase.from('job_materials') as any
+    const { data: material } = await materialQuery
       .select('inventory_id, quantity')
       .eq('id', materialId)
       .single();
@@ -28,7 +28,8 @@ export async function DELETE(
 
     // Restore inventory quantity
     if (material) {
-      await supabase.rpc('update_inventory_quantity', {
+      const rpcCall = supabase.rpc as any
+      await rpcCall('update_inventory_quantity', {
         p_inventory_id: material.inventory_id,
         p_quantity_change: material.quantity,
       });

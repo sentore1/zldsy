@@ -10,8 +10,8 @@ export async function PATCH(
     const body = await request.json()
     const { id } = await params
 
-    const { data: equipment, error } = await supabase
-      .from('equipment')
+    const query = supabase.from('equipment') as any
+    const { data: equipment, error } = await query
       .update(body)
       .eq('id', id)
       .select()

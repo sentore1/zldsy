@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
     // Create or get customer
     let customerId = customer_id
     if (!customerId && customer_info) {
-      const { data: customer, error: customerError } = await supabase
-        .from('customers')
+      const customerQuery = supabase.from('customers') as any
+      const { data: customer, error: customerError } = await customerQuery
         .insert({
           name: customer_info.name,
           email: customer_info.email,
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create booking
-    const { data: booking, error: bookingError } = await supabase
-      .from('bookings')
+    const bookingQuery = supabase.from('bookings') as any
+    const { data: booking, error: bookingError } = await bookingQuery
       .insert({
         customer_id: customerId,
         service_id,

@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
         .limit(100) // Limit fetch size
       
       lowStockItems = allInventory?.filter(
-        item => Number(item.quantity) < Number(item.reorder_level)
+        (item: any) => Number(item.quantity) < Number(item.reorder_level)
       ).slice(0, 10) || []
       lowStockCount = lowStockItems.length
     } else {

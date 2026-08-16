@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
       notes,
     } = body
 
-    const { data: equipment, error } = await supabase
-      .from('equipment')
+    const query = supabase.from('equipment') as any
+    const { data: equipment, error } = await query
       .insert({
         name,
         type,

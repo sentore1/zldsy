@@ -10,8 +10,8 @@ export async function POST(
     const { id: jobId } = await params;
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('job_staff')
+    const query = supabase.from('job_staff') as any
+    const { data, error } = await query
       .insert({
         job_id: jobId,
         staff_id: body.staff_id,

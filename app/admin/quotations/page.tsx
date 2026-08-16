@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X, Download } from "lucide-react";
+import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X, Download, Loader2 } from "lucide-react";
 import { generateQuotationPDF, downloadPDF } from "@/lib/utils/pdf-generator";
 
 interface Quotation {
@@ -50,6 +50,7 @@ export default function QuotationsPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     customer_id: "",
@@ -112,12 +113,11 @@ export default function QuotationsPage() {
 
   const handleDownloadPDF = async (quotation: Quotation) => {
     try {
-      setLoading(true);
+      setDownloadingId(quotation.id);
       const pdfBlob = await generateQuotationPDF(quotation);
       
       if (pdfBlob) {
         downloadPDF(pdfBlob, `${quotation.quotation_number}.pdf`);
-        alert("Quotation PDF downloaded successfully!");
       } else {
         alert("Failed to generate PDF. Please try again.");
       }
@@ -125,7 +125,7 @@ export default function QuotationsPage() {
       console.error("Failed to download quotation PDF:", error);
       alert("Failed to download PDF. Please try again.");
     } finally {
-      setLoading(false);
+      setDownloadingId(null);
     }
   };
 
@@ -349,11 +349,13 @@ export default function QuotationsPage() {
                         </button>
                         <button 
                           onClick={() => handleDownloadPDF(quot)}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-green-600 hover:text-green-900 disabled:opacity-50"
                           title="Download PDF"
-                          disabled={loading}
+                          disabled={downloadingId === quot.id}
                         >
-                          <Download className="w-5 h-5" />
+                          {downloadingId === quot.id
+                            ? <Loader2 className="w-5 h-5 animate-spin" />
+                            : <Download className="w-5 h-5" />}
                         </button>
                       </div>
                     </td>
@@ -686,11 +688,13 @@ export default function QuotationsPage() {
                       handleDownloadPDF(selectedQuotation);
                     }
                   }}
-                  disabled={loading}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={downloadingId === selectedQuotation?.id}
+                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-5 h-5" />
-                  {loading ? "Generating..." : "Download PDF"}
+                  {downloadingId === selectedQuotation?.id
+                    ? <Loader2 className="w-5 h-5 animate-spin" />
+                    : <Download className="w-5 h-5" />}
+                  {downloadingId === selectedQuotation?.id ? "Generating..." : "Download PDF"}
                 </button>
               </div>
             </div>
