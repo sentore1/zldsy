@@ -73,10 +73,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create staff record (with or without user_id)
+    // Create staff record
+    // Note: user_id linking would require adding a user_id column to the staff table
     const staffRecord = {
       ...staffData,
-      user_id: userId, // Link to auth user if created
+      // user_id: userId, // TODO: Add user_id column to staff table schema if auth linking is needed
     }
 
     const query = supabase.from('staff') as any
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Staff creation error:', error)
+      console.error('Staff creation error details:', JSON.stringify(error, null, 2))
       
       // If staff creation fails but auth user was created, we should clean up
       if (userId) {
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      throw new Error('Failed to create staff member')
+      throw new Error(`Failed to create staff member: ${error.message || error.details || 'Unknown error'}`)
     }
 
     console.log('✅ Created staff member:', data.id)

@@ -20,8 +20,7 @@ interface Invoice {
     job_number: string;
     booking?: {
       customer?: {
-        first_name: string;
-        last_name: string;
+        name: string;
       };
       service?: {
         name: string;
@@ -35,8 +34,7 @@ interface Job {
   job_number: string;
   booking?: {
     customer?: {
-      first_name: string;
-      last_name: string;
+      name: string;
     };
   };
 }
@@ -254,9 +252,7 @@ export default function InvoicesPage() {
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesStatus =
       filterStatus === "all" || invoice.status === filterStatus;
-    const customerName = invoice.job?.booking?.customer 
-      ? `${invoice.job.booking.customer.first_name} ${invoice.job.booking.customer.last_name}`
-      : "";
+    const customerName = invoice.job?.booking?.customer?.name || "";
     const matchesSearch =
       invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -448,9 +444,7 @@ export default function InvoicesPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredInvoices.map((invoice) => {
-                const customerName = invoice.job?.booking?.customer
-                  ? `${invoice.job.booking.customer.first_name} ${invoice.job.booking.customer.last_name}`
-                  : "N/A";
+                const customerName = invoice.job?.booking?.customer?.name || "undefined";
                 const serviceName = invoice.job?.booking?.service?.name || "N/A";
                 
                 return (
@@ -578,9 +572,7 @@ export default function InvoicesPage() {
                   <option value="">Select a job</option>
                   {jobs.map((job) => (
                     <option key={job.id} value={job.id}>
-                      {job.job_number} - {job.booking?.customer 
-                        ? `${job.booking.customer.first_name} ${job.booking.customer.last_name}`
-                        : 'Unknown Customer'}
+                      {job.job_number} - {job.booking?.customer?.name || 'Unknown Customer'}
                     </option>
                   ))}
                 </select>
@@ -703,9 +695,7 @@ export default function InvoicesPage() {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Customer</h3>
                   <p className="text-base text-gray-900 mt-1">
-                    {selectedInvoice.job?.booking?.customer
-                      ? `${selectedInvoice.job.booking.customer.first_name} ${selectedInvoice.job.booking.customer.last_name}`
-                      : "N/A"}
+                    {selectedInvoice.job?.booking?.customer?.name || "N/A"}
                   </p>
                 </div>
                 <div>

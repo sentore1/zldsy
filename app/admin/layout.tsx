@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   SidebarClose,
   SidebarOpen,
+  Repeat,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -41,7 +42,7 @@ const ROLE_LABELS: Record<Role, string> = {
 const ROLE_ACCESS: Record<Role, string[]> = {
   admin: ["dashboard", "customers", "operations", "financial", "resources", "more"],
   manager: ["dashboard", "customers", "operations", "financial", "resources", "reports"],
-  staff: ["dashboard", "jobs"],
+  staff: ["jobs"], // Staff only sees Jobs section
 };
 
 function hasAccess(role: Role, section: string) {
@@ -83,9 +84,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .eq("user_id", user.id)
         .single();
 
-      setUserRole((data?.role as Role) ?? "staff");
+      const role = (data?.role as Role) ?? "staff";
+      setUserRole(role);
+
+      // Redirect staff users from dashboard to jobs
+      if (role === "staff" && pathname === "/admin/dashboard") {
+        router.push("/admin/jobs");
+      }
     });
-  }, [router]);
+  }, [router, pathname]);
 
   useEffect(() => {
     const newPinned = {
@@ -125,11 +132,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Image 
                   src="/logo.png" 
                   alt="Logo" 
-                  width={28} 
-                  height={28}
-                  className="object-contain"
+                  width={56} 
+                  height={56}
+                  className="object-contain brightness-0 invert"
                 />
-                <h1 className="text-lg font-bold whitespace-nowrap">Admin Panel</h1>
+                <h1 className="text-lg font-bold whitespace-nowrap">Admin</h1>
               </div>
               {userEmail && (
                 <p className="text-xs text-gray-400 truncate max-w-[160px]">{userEmail}</p>
@@ -143,9 +150,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Image 
               src="/logo.png" 
               alt="Logo" 
-              width={32} 
-              height={32}
-              className="object-contain"
+              width={52} 
+              height={52}
+              className="object-contain brightness-0 invert"
             />
           )}
           <button
@@ -208,6 +215,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <NavLink href="/admin/invoices" icon={<Receipt size={16} />} isNested collapsed={collapsed}>Invoices</NavLink>
               <NavLink href="/admin/payments" icon={<DollarSign size={16} />} isNested collapsed={collapsed}>Payments</NavLink>
+              <NavLink href="/admin/subscriptions" icon={<Repeat size={16} />} isNested collapsed={collapsed}>Subscriptions</NavLink>
             </NavSection>
           )}
 

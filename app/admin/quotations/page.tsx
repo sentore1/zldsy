@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X, Download, Loader2 } from "lucide-react";
+import { FileText, Search, CheckCircle, XCircle, Clock, Eye, DollarSign, Plus, X, Download, Loader2, Share2 } from "lucide-react";
 import { generateQuotationPDF, downloadPDF } from "@/lib/utils/pdf-generator";
+import { shareQuotationViaWhatsApp } from "@/lib/utils/whatsapp";
 
 interface Quotation {
   id: string;
@@ -18,6 +19,7 @@ interface Quotation {
     customer?: {
       name: string;
       email: string;
+      phone: string;
     };
     service?: {
       name: string;
@@ -127,6 +129,17 @@ export default function QuotationsPage() {
     } finally {
       setDownloadingId(null);
     }
+  };
+
+  const handleShareWhatsApp = (quotation: Quotation) => {
+    shareQuotationViaWhatsApp({
+      id: quotation.id,
+      quotation_number: quotation.quotation_number,
+      customer_name: quotation.booking?.customer?.name || "Customer",
+      customer_phone: quotation.booking?.customer?.phone, // Send to customer's phone
+      total_amount: quotation.final_amount,
+      valid_until: quotation.valid_until,
+    });
   };
 
   const calculateAmounts = (amount: number, taxRate: number, discount: number) => {
@@ -346,6 +359,13 @@ export default function QuotationsPage() {
                           title="View Quotation Details"
                         >
                           <Eye className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleShareWhatsApp(quot)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Share via WhatsApp"
+                        >
+                          <Share2 className="w-5 h-5" />
                         </button>
                         <button 
                           onClick={() => handleDownloadPDF(quot)}

@@ -29,22 +29,35 @@ export async function POST(request: NextRequest) {
     // Create or get customer
     let customerId = customer_id
     if (!customerId && customer_info) {
-      const customerQuery = supabase.from('customers') as any
-      const { data: customer, error: customerError } = await customerQuery
-        .insert({
-          name: customer_info.name,
-          email: customer_info.email,
-          phone: customer_info.phone,
-          address: customer_info.address,
-        })
-        .select()
+      // First, check if customer already exists by email
+      const { data: existingCustomer, error: existingCustomerError } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('email', customer_info.email)
         .single()
 
-      if (customerError) {
-        console.error('Customer creation error:', customerError)
-        throw new Error('Failed to create customer')
+      if (existingCustomer) {
+        // Customer exists, use their ID
+        customerId = existingCustomer.id
+      } else {
+        // Customer doesn't exist, create new one
+        const customerQuery = supabase.from('customers') as any
+        const { data: customer, error: customerError } = await customerQuery
+          .insert({
+            name: customer_info.name,
+            email: customer_info.email,
+            phone: customer_info.phone,
+            address: customer_info.address,
+          })
+          .select()
+          .single()
+
+        if (customerError) {
+          console.error('Customer creation error:', customerError)
+          throw new Error('Failed to create customer')
+        }
+        customerId = customer.id
       }
-      customerId = customer.id
     }
 
     // Create booking

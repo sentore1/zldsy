@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
           *,
           booking:bookings(
             *,
-            customer:customers(*)
+            customer:customers(*),
+            service:services(*)
           )
         )
       `)
-      .order('created_at', { ascending: false })
+      .order('due_date', { ascending: false })
 
     if (status) {
       query = query.eq('status', status)
@@ -72,7 +73,8 @@ export async function POST(request: NextRequest) {
           *,
           booking:bookings(
             *,
-            customer:customers(*)
+            customer:customers(*),
+            service:services(*)
           )
         )
       `)

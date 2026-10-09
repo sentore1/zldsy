@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2 } from "lucide-react";
+import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2, MessageCircle, Copy } from "lucide-react";
 import Link from "next/link";
+import { shareQuotationViaWhatsApp, copyToClipboard } from "@/lib/utils/whatsapp";
 
 interface Quotation {
   id: string;
@@ -44,6 +45,29 @@ export default function QuotationPage() {
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleShareWhatsApp = () => {
+    if (!quotation) return;
+    
+    shareQuotationViaWhatsApp({
+      id: quotation.id,
+      quotation_number: quotation.id.slice(0, 8),
+      customer_name: quotation.booking?.customer?.name || "Customer",
+      customer_phone: quotation.booking?.customer?.phone,
+      total_amount: quotation.total_amount || 0,
+      valid_until: quotation.valid_until,
+    });
+  };
+
+  const handleCopyLink = async () => {
+    const link = `${window.location.origin}/customer/quotations/${quotationId}`;
+    const success = await copyToClipboard(link);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     fetchQuotation();
@@ -134,7 +158,7 @@ export default function QuotationPage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Service Quotation
@@ -143,7 +167,35 @@ export default function QuotationPage() {
                 Quotation ID: <span className="font-mono">{quotation.id.slice(0, 8)}</span>
               </p>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-3">
+              {/* Share Buttons */}
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                title="Copy quotation link"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium">Copy Link</span>
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleShareWhatsApp}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                title="Share via WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Share</span>
+              </button>
+              
               <div
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
                   isAccepted

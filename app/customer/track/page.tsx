@@ -156,7 +156,7 @@ export default function TrackServicePage() {
             </button>
           </div>
           <p className="text-xs text-gray-400 mt-2">
-            Enter the phone number you used when booking, or your booking ID (e.g. BOOK-12345).
+            Enter the phone number you used when booking (e.g., +250 7XX XXX XXX), or your booking ID (e.g., BOOK-12345).
           </p>
         </form>
 

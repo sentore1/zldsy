@@ -60,7 +60,8 @@ export async function PATCH(
           *,
           booking:bookings(
             *,
-            customer:customers(*)
+            customer:customers(*),
+            service:services(*)
           )
         )
       `)

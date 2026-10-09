@@ -87,7 +87,7 @@ async function drawHeader(
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8)
   pdf.setTextColor(220, 245, 246)
-  pdf.text('info@premierservice.com  |  +250 788 000 000', PAGE_W / 2, 20, { align: 'center' })
+  pdf.text('info@premierservice.com  |  +250 790 002 669', PAGE_W / 2, 20, { align: 'center' })
   pdf.text('KG 123 St, Kigali, Rwanda', PAGE_W / 2, 25, { align: 'center' })
 
   // ── QR code (right side of header) ────────────────────────────────────────
@@ -551,7 +551,7 @@ export async function generateInvoicePDF(invoice: any): Promise<Blob | null> {
     pdf.setTextColor(80, 80, 80)
     pdf.text('Bank: Premier Bank  |  Account: 1234567890  |  Branch: Kigali', 20, yPos)
     yPos += 5
-    pdf.text('Mobile Money: +250 788 000 000', 20, yPos)
+    pdf.text('Mobile Money: +250 790 002 669', 20, yPos)
     yPos += 5
     pdf.text('Or scan the QR code in the header for online payment.', 20, yPos)
 

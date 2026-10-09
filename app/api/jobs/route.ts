@@ -8,7 +8,66 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const startDate = searchParams.get('start_date')
     const endDate = searchParams.get('end_date')
+    const staffId = searchParams.get('staff_id')
 
+    // If filtering by staff, we need to get jobs assigned to that staff member
+    if (staffId) {
+      // First get job IDs assigned to this staff member
+      const { data: staffAssignments, error: staffError } = await supabase
+        .from('job_staff')
+        .select('job_id')
+        .eq('staff_id', staffId)
+
+      if (staffError) {
+        console.error('Staff assignments fetch error:', staffError)
+        throw new Error('Failed to fetch staff assignments')
+      }
+
+      const jobIds = staffAssignments?.map(a => a.job_id) || []
+
+      // If no jobs assigned, return empty array
+      if (jobIds.length === 0) {
+        return NextResponse.json({ jobs: [] })
+      }
+
+      // Fetch jobs assigned to this staff member
+      let query = supabase
+        .from('jobs')
+        .select(`
+          *,
+          booking:bookings(
+            *,
+            customer:customers(*),
+            service:services(*)
+          ),
+          quotation:quotations(*)
+        `)
+        .in('id', jobIds)
+        .order('created_at', { ascending: false })
+
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      if (startDate) {
+        query = query.gte('scheduled_date', startDate)
+      }
+
+      if (endDate) {
+        query = query.lte('scheduled_date', endDate)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error('Jobs fetch error:', error)
+        throw new Error('Failed to fetch jobs')
+      }
+
+      return NextResponse.json({ jobs: data || [] })
+    }
+
+    // Default: fetch all jobs (for admin/manager)
     let query = supabase
       .from('jobs')
       .select(`

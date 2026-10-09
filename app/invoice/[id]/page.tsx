@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2, CreditCard, Banknote } from "lucide-react";
+import { CheckCircle, Clock, FileText, DollarSign, Calendar, User, MapPin, Phone, Mail, Loader2, CreditCard, Banknote, MessageCircle, Copy, Share2 } from "lucide-react";
 import Link from "next/link";
 import QRCode from "qrcode";
+import { WhatsAppShareButton } from "@/components/WhatsAppShareButton";
+import { shareInvoiceViaWhatsApp, generateInvoiceWhatsAppMessage, copyToClipboard } from "@/lib/utils/whatsapp";
 
 interface Invoice {
   id: string;
@@ -57,6 +59,29 @@ export default function InvoicePage() {
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [momoCode, setMomoCode] = useState<string>("");
   const [momoQr, setMomoQr] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  const handleShareWhatsApp = () => {
+    if (!invoice) return;
+    
+    const customer = invoice.job?.booking?.customer;
+    shareInvoiceViaWhatsApp({
+      id: invoice.id,
+      invoice_number: invoice.id.slice(0, 8),
+      customer_name: customer?.name || "Customer",
+      customer_phone: customer?.phone, // Send to customer's phone
+      total_amount: invoice.total_amount || 0,
+    });
+  };
+
+  const handleCopyLink = async () => {
+    const link = `${window.location.origin}/invoice/${invoiceId}`;
+    const success = await copyToClipboard(link);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   useEffect(() => {
     fetchInvoice();
@@ -186,14 +211,42 @@ export default function InvoicePage() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Invoice</h1>
               <p className="text-gray-600">
                 Invoice ID: <span className="font-mono">{invoice.id.slice(0, 8)}</span>
               </p>
             </div>
-            <div className="text-right">
+            <div className="flex items-center gap-3">
+              {/* Share Buttons */}
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                title="Copy invoice link"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm font-medium">Copy Link</span>
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleShareWhatsApp}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                title="Share via WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Share</span>
+              </button>
+              
               <div
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
                   isPaid

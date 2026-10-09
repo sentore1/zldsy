@@ -29,6 +29,7 @@ function BookingForm() {
   const [step, setStep] = useState(1);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTerms, setShowTerms] = useState(false);
   const [formData, setFormData] = useState({
     service: "",
     name: "",
@@ -38,6 +39,7 @@ function BookingForm() {
     preferredDate: "",
     notes: "",
     photos: [] as File[],
+    agreedToTerms: false,
   });
 
   useEffect(() => {
@@ -84,6 +86,12 @@ function BookingForm() {
     if (step < 3) {
       setStep(step + 1);
     } else {
+      // Check terms agreement before submitting
+      if (!formData.agreedToTerms) {
+        alert('Please agree to the Terms and Conditions to continue');
+        return;
+      }
+
       // Submit booking
       try {
         setLoading(true);
@@ -258,8 +266,11 @@ function BookingForm() {
                     style={{ outlineColor: '#28A8AC' }}
                     onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #28A8AC'}
                     onBlur={(e) => e.target.style.boxShadow = ''}
-                    placeholder="+1 234 567 8900"
+                    placeholder="+250 7XX XXX XXX"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use format: +250 7XX XXX XXX for tracking your booking
+                  </p>
                 </div>
               </div>
 
@@ -482,17 +493,28 @@ function BookingForm() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">
-                  What happens next?
-                </h3>
-                <ul className="space-y-2 text-sm text-blue-800">
-                  <li>✓ You'll receive an automatic quotation via email/SMS</li>
-                  <li>✓ Review and accept the terms & conditions</li>
-                  <li>✓ Track your service progress in real-time</li>
-                  <li>✓ Receive invoice after service completion</li>
-                  <li>✓ Make payment and leave feedback</li>
-                </ul>
+              {/* Terms and Conditions */}
+              <div className="border-2 border-gray-300 rounded-lg p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.agreedToTerms}
+                    onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })}
+                    className="mt-1 w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    required
+                  />
+                  <span className="text-sm text-gray-700">
+                    I agree to the{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowTerms(true)}
+                      className="text-teal-600 font-semibold underline hover:text-teal-700"
+                    >
+                      Terms and Conditions
+                    </button>{" "}
+                    *
+                  </span>
+                </label>
               </div>
 
               <div className="flex gap-4">
@@ -532,6 +554,144 @@ function BookingForm() {
           )}
         </form>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-teal-600 text-white p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Terms and Conditions</h2>
+              <button
+                onClick={() => setShowTerms(false)}
+                className="text-white hover:text-gray-200 transition"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto p-6 space-y-6">
+              <TermSection
+                title="1. Service Agreement"
+                content="By booking our services, you agree to allow our professional staff to access the designated service area at the scheduled time. You are responsible for ensuring safe access to the property."
+              />
+              
+              <TermSection
+                title="2. Pricing and Quotations"
+                content="All prices are quoted in Rwandan Francs (RWF). Initial quotations are estimates based on the information provided. Final pricing may vary based on actual service requirements, area size, and condition. Any changes will be communicated before service commencement."
+              />
+              
+              <TermSection
+                title="3. Payment Terms"
+                content={`Payment is due upon service completion unless otherwise agreed. We accept cash and mobile money (MTN Mobile Money, Airtel Money).
+
+Invoices will be provided electronically. Late payments beyond the agreed payment date will incur a penalty of 5% per day until full payment is received.`}
+              />
+              
+              <TermSection
+                title="4. Cancellation Policy"
+                content={`Cancellation must be made in writing (email, SMS, or through our app):
+
+• More than 48 hours before scheduled service: No charge
+• 24-48 hours before scheduled service: 50% cancellation fee will apply
+• Less than 24 hours before scheduled service: 100% cancellation fee (full service charge)
+
+We reserve the right to cancel services due to unforeseen circumstances (severe weather, emergencies, etc.) with full refund. You will be notified immediately and offered alternative dates.`}
+              />
+              
+              <TermSection
+                title="5. Rescheduling"
+                content="Services may be rescheduled up to 24 hours before the scheduled time without penalty. Please contact us as soon as possible to arrange a new time."
+              />
+              
+              <TermSection
+                title="6. Service Guarantee"
+                content={`We stand behind the quality of our work. If you are not satisfied with any aspect of our service, or if something has been lost or damaged, you must notify us within 24 hours of service completion. We will return to address the issue at no additional charge.
+
+IMPORTANT: Any claims for lost items, damages, or service quality issues NOT reported within 24 hours will not be considered. After 24 hours, the service will be deemed accepted and satisfactory.`}
+              />
+              
+              <TermSection
+                title="7. Liability and Insurance"
+                content={`We maintain comprehensive liability insurance. However, we are not responsible for:
+• Pre-existing damage not reported before service
+• Damage to items not properly secured
+• Items of unusual value unless specifically declared
+• Loss of items valued over RWF 50,000 unless declared`}
+              />
+              
+              <TermSection
+                title="8. Customer Responsibilities"
+                content={`You agree to:
+• Provide accurate service location and contact information
+• Secure valuable or fragile items before service
+• Inform us of any special requirements or hazards
+• Ensure pets are secured during service
+• Provide access to water and electricity as needed
+
+IMPORTANT - Property Security:
+• The customer MUST provide a supervisor or responsible person to be present during service and to secure valuable properties
+• If valuable items are lost or damaged WITHOUT the presence of your designated supervisor, ZLD Hub will NOT be held responsible for the loss
+• Items of high value (jewelry, electronics, cash, important documents) must be secured by the customer before service begins
+• Our staff will not be held liable for losses that occur due to inadequate supervision by the customer`}
+              />
+              
+              <TermSection
+                title="9. Privacy and Data Protection"
+                content="We collect and process your personal information in accordance with Rwanda's data protection laws. Your data is used solely for service delivery, communication, and record keeping. We do not share your information with third parties without consent."
+              />
+              
+              <TermSection
+                title="10. Health and Safety"
+                content="Our staff follow strict health and safety protocols. We use professional-grade, eco-friendly cleaning products. If you have allergies or sensitivities, please inform us in advance so we can accommodate your needs."
+              />
+              
+              <TermSection
+                title="11. Dispute Resolution"
+                content="Any disputes arising from our services will be resolved through good faith negotiation. If unresolved, disputes shall be subject to the jurisdiction of Rwanda courts."
+              />
+              
+              <p className="text-xs text-gray-500 italic">
+                Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-6 flex gap-3">
+              <button
+                onClick={() => setShowTerms(false)}
+                className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setFormData({ ...formData, agreedToTerms: true });
+                  setShowTerms(false);
+                }}
+                className="flex-1 px-6 py-3 text-white rounded-lg transition font-medium"
+                style={{ backgroundColor: '#28A8AC' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#239095'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28A8AC'}
+              >
+                I Agree
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TermSection({ title, content }: { title: string; content: string }) {
+  return (
+    <div>
+      <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-700 text-sm whitespace-pre-line leading-relaxed">{content}</p>
     </div>
   );
 }

@@ -74,9 +74,14 @@ export default function StaffPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
           hourly_rate: parseFloat(formData.hourly_rate),
-          rate_unit: formData.rate_unit,
+          is_active: formData.is_active,
+          password: formData.password,
+          // rate_unit is not in the database schema, remove it
         }),
       });
 
@@ -103,9 +108,13 @@ export default function StaffPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
           hourly_rate: parseFloat(formData.hourly_rate),
-          rate_unit: formData.rate_unit,
+          is_active: formData.is_active,
+          // rate_unit is not in the database schema, remove it
         }),
       });
 

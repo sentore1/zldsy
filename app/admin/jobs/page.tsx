@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Calendar, Users, MapPin, Sun, Cloud, CloudRain, X, FileText, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+
+type Role = "admin" | "manager" | "staff";
 
 interface Job {
   id: string;
@@ -45,6 +48,9 @@ export default function JobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userRole, setUserRole] = useState<Role>("staff");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     booking_id: "",
@@ -55,15 +61,62 @@ export default function JobsPage() {
   });
 
   useEffect(() => {
-    fetchJobs();
-    fetchBookings();
-    fetchStaff();
+    fetchUserRole();
   }, []);
+
+  useEffect(() => {
+    // Fetch jobs after we have the user role and staffId (for staff users)
+    if (userRole && (userRole !== "staff" || staffId !== null)) {
+      fetchJobs();
+      fetchBookings();
+      fetchStaff();
+    }
+  }, [userRole, staffId]);
+
+  const fetchUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+        
+        const role = (data?.role as Role) ?? "staff";
+        setUserRole(role);
+
+        // If staff role, get their staff record ID
+        if (role === "staff") {
+          const { data: staffData } = await supabase
+            .from("staff")
+            .select("id")
+            .eq("email", user.email)
+            .single();
+          
+          if (staffData) {
+            setStaffId(staffData.id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch user role:", err);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/jobs");
+      
+      // For staff users, only fetch jobs they're assigned to
+      let url = "/api/jobs";
+      if (userRole === "staff" && staffId) {
+        url = `/api/jobs?staff_id=${staffId}`;
+      }
+      
+      const response = await fetch(url);
       const data = await response.json();
       if (response.ok) {
         setJobs(data.jobs || []);
@@ -218,19 +271,21 @@ export default function JobsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Jobs Management</h1>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
-          className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
-          style={{ backgroundColor: '#28A8AC' }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
-        >
-          <Plus className="w-5 h-5" />
-          Create Job
-        </button>
+        {userRole !== "staff" && (
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateModal(true);
+            }}
+            className="px-6 py-3 text-white rounded-lg transition font-medium flex items-center gap-2"
+            style={{ backgroundColor: '#28A8AC' }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor='#09ACAD')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor='#28A8AC')}
+          >
+            <Plus className="w-5 h-5" />
+            Create Job
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -395,13 +450,15 @@ export default function JobsPage() {
               </div>
 
               <div className="pt-4 border-t space-y-3">
-                <button
-                  onClick={() => router.push(`/admin/jobs/${job.id}`)}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  View Details & Costs
-                </button>
+                {userRole !== "staff" && (
+                  <button
+                    onClick={() => router.push(`/admin/jobs/${job.id}`)}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Details & Costs
+                  </button>
+                )}
                 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -420,7 +477,7 @@ export default function JobsPage() {
                   </select>
                 </div>
                 
-                {job.status === "completed" && (
+                {userRole !== "staff" && job.status === "completed" && (
                   <button
                     onClick={() => handleGenerateInvoice(job.id)}
                     className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"

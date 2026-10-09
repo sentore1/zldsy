@@ -52,16 +52,13 @@ export default function LoginPage() {
               <div className="bg-white p-2 rounded mx-auto mb-2">
                 <Image
                   src="/logo.png"
-                  alt="ZLD System"
+                  alt="Service Portal"
                   width={64}
                   height={64}
                   className="h-16 w-auto"
                   priority
                 />
               </div>
-              <h1 className="text-2xl font-bold text-blue-700">
-                ZLDHub
-              </h1>
             </Link>
           </div>
 
@@ -136,7 +133,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full text-white py-3 rounded-lg transition font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{ backgroundColor: loading ? undefined : '#2EA5AB' }}
+              onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#28a0a6')}
+              onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = '#2EA5AB')}
             >
               {loading ? (
                 <>
@@ -162,12 +162,12 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side */}
-      <div className="hidden lg:flex flex-1 bg-gray-50 items-center justify-center p-8">
+      <div className="hidden lg:flex flex-1 items-center justify-center p-8" style={{ backgroundColor: '#2EA5AB' }}>
         <div className="max-w-md text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            ZLD System
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Service Management
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-white opacity-90">
             Manage your service business efficiently with our comprehensive
             admin dashboard
           </p>

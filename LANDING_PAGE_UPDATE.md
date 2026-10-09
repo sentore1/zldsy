@@ -1,188 +1,177 @@
-# Landing Page - Service Booking Focus
+# Landing Page Update - Category Rows
 
-## ✅ Transformed Landing Page
+## Changes Made
 
-The landing page has been completely redesigned to focus on **service booking for customers**. It now serves as a customer-facing service catalog where users can browse and book services directly.
+Updated the landing page (`app/page.tsx`) to display services organized by category in separate rows.
 
-## 🎨 New Features
+### Before
+- Services displayed in a single grid with category filter buttons
+- "All" category option to show everything
+- Users had to click buttons to filter by category
 
-### 1. **Hero Section**
-- Eye-catching gradient header
-- Clear value proposition
-- Trust badges (Verified Professionals, Quick Response, Satisfaction Guaranteed)
-- Direct "Browse Services" call-to-action
+### After
+- Services automatically grouped and displayed by category
+- Each category has its own section with:
+  - Category icon (Sparkles, Wrench, Leaf, Truck)
+  - Category name
+  - Service count
+  - Horizontal divider line
+- Services for each category displayed in a responsive grid
+- All services visible at once (no filtering needed)
 
-### 2. **Services Catalog**
-- **Dynamic service loading** from Supabase database
-- **Category filtering** - users can filter by service categories
-- **Service cards** with:
-  - Service name and description
-  - Category badge
-  - Price display (base price per unit)
-  - "Book Now" button
-- Responsive grid layout (1 column mobile, 2 tablet, 3 desktop)
+## Visual Layout
 
-### 3. **How It Works Section**
-- 4-step process visualization
-- Clear customer journey
-- Icon-based visual aids
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Our Services                          │
+│          Professional services organized by category     │
+└─────────────────────────────────────────────────────────┘
 
-### 4. **Contact Section**
-- Phone and email contact information
-- Prominent display for customer support
+┌─[🧹]─ Cleaning and Fumigation ──────────────────────────┐
+│        X services available                              │
+├─────────────────────────────────────────────────────────┤
+│  [Service Card] [Service Card] [Service Card] [Service] │
+└─────────────────────────────────────────────────────────┘
 
-### 5. **Sticky Header**
-- Always accessible navigation
-- Quick access to "Track Order" and "Admin" links
-- Professional branding
+┌─[🔧]─ Maintenance and Renovations ──────────────────────┐
+│        X services available                              │
+├─────────────────────────────────────────────────────────┤
+│  [Service Card] [Service Card] [Service Card] [Service] │
+└─────────────────────────────────────────────────────────┘
 
-## 🔄 User Flow
+┌─[🌿]─ Gardening and Landscaping ────────────────────────┐
+│        X services available                              │
+├─────────────────────────────────────────────────────────┤
+│  [Service Card] [Service Card] [Service Card] [Service] │
+└─────────────────────────────────────────────────────────┘
 
-1. **User lands on homepage** → Sees hero with value proposition
-2. **Scrolls or clicks "Browse Services"** → Views all available services
-3. **Filters by category** (optional) → Narrows down choices
-4. **Clicks "Book Now"** → Redirects to booking page with pre-selected service
-5. **Completes booking form** → Submits booking request
-6. **Receives quotation** → Gets email with pricing
-7. **Tracks order** → Uses "Track Order" link in header
-
-## 📊 Data Integration
-
-### Services API Integration
-```typescript
-// Fetches real services from /api/services
-const response = await fetch("/api/services");
-const services = data.filter(s => s.is_active); // Only show active services
+┌─[🚚]─ Moving and Property Management ───────────────────┐
+│        X services available                              │
+├─────────────────────────────────────────────────────────┤
+│  [Service Card] [Service Card] [Service Card] [Service] │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Features:
-- **Real-time data** - Services pulled from database
-- **Active only** - Only displays active services
-- **Category filter** - Dynamic categories from service data
-- **Loading state** - Shows spinner while fetching
-- **Error handling** - Graceful fallback if API fails
+## Category Icons
 
-## 🎯 Service Card Information
+The system automatically assigns icons based on category name:
 
-Each service card displays:
-- **Service Name** - Clear service title
-- **Category Badge** - Service type (Fumigation, Cleaning, etc.)
-- **Description** - Brief service overview
-- **Price** - Base price with unit (per sqm, per hour, etc.)
-- **Book Now Button** - Direct link to booking with service pre-selected
+| Category Type | Icon | Example Categories |
+|--------------|------|-------------------|
+| Cleaning/Fumigation | ✨ Sparkles | "Cleaning and Fumigation Services" |
+| Maintenance/Renovations | 🔧 Wrench | "Maintenance and Renovations Services" |
+| Gardening/Landscaping | 🍃 Leaf | "Gardening and Landscaping" |
+| Moving/Property | 🚚 Truck | "Moving and Property Management" |
+| Other | First letter | Any other category |
 
-## 🔗 Navigation Links
+## Technical Details
 
-### Header:
-- **Track Order** → `/customer/track` - Check booking status
-- **Admin** → `/admin` - Admin dashboard access
+### Removed Features
+- `selectedCategory` state (no longer needed)
+- Category filter buttons
+- "All" category option
+- Category filtering logic
 
-### Footer:
-- Track Order link
-- Admin Login link
-- Copyright information
+### Added Features
+- `servicesByCategory` object: Groups services by category
+- `getCategoryIcon()` function: Returns appropriate icon for category
+- Category section headers with icons
+- Automatic service grouping
 
-## 📱 Responsive Design
+### Code Changes
 
-- **Mobile**: Single column service cards, stacked layout
-- **Tablet**: 2-column service grid
-- **Desktop**: 3-column service grid
-- **Sticky header**: Fixed navigation on all devices
-
-## 🎨 Design System
-
-### Colors:
-- **Primary**: Indigo/Blue gradient (`from-indigo-600 to-blue-600`)
-- **Background**: Soft gradient (`from-blue-50 via-white to-indigo-50`)
-- **Cards**: White with shadow effects
-- **Buttons**: Indigo primary, white secondary
-
-### Typography:
-- **Hero**: 4xl-6xl bold
-- **Section Titles**: 3xl-4xl bold
-- **Service Cards**: 2xl heading, base body text
-
-### Effects:
-- Hover animations on cards (lift effect)
-- Smooth transitions
-- Backdrop blur effects
-- Shadow variations
-
-## 🚀 Quick Start
-
-1. **User visits**: `http://localhost:3000`
-2. **Sees services**: All active services displayed
-3. **Filters (optional)**: Click category to filter
-4. **Books service**: Click "Book Now" on any service
-5. **Redirects to**: `/customer/booking?service={service_id}`
-
-## 📝 Content Sections
-
-### Hero:
-- **Title**: "Professional Services at Your Doorstep"
-- **Subtitle**: Service description and value proposition
-- **Trust Badges**: Verification, Speed, Satisfaction
-
-### Services:
-- **Title**: "Our Services"
-- **Subtitle**: "Choose from our wide range of professional services"
-- **Category Filters**: Dynamic from database
-- **Service Grid**: 3-column responsive layout
-
-### How It Works:
-1. Choose Service
-2. Book Online
-3. Get Quote
-4. Service Done
-
-### Contact:
-- **Title**: "Need Help? Contact Us"
-- **Phone**: +1-555-0100
-- **Email**: info@premierservice.com
-
-## 🔧 Technical Details
-
-### Component Structure:
+**Key Functions:**
 ```typescript
-- Home() - Main page component
-  - Header (sticky navigation)
-  - Hero Section
-  - Services Section
-    - Category Filter
-    - ServiceCard[] (mapped from API)
-  - How It Works Section
-  - Contact Section
-  - Footer
+// Groups services by category
+const servicesByCategory = categories.reduce((acc, category) => {
+  acc[category] = services.filter((s) => s.category === category);
+  return acc;
+}, {} as Record<string, Service[]>);
+
+// Returns icon based on category name
+const getCategoryIcon = (category: string) => {
+  const lowerCategory = category.toLowerCase();
+  if (lowerCategory.includes('cleaning') || lowerCategory.includes('fumigation')) {
+    return <Sparkles className="w-6 h-6" />;
+  }
+  // ... more conditions
+};
 ```
 
-### State Management:
-- `services` - Array of service objects
-- `loading` - Boolean for loading state
-- `selectedCategory` - Current filter selection
+### UI Structure
+```tsx
+<div className="space-y-12">
+  {categories.map((category) => (
+    <div key={category} className="space-y-4">
+      {/* Category Header */}
+      <div className="flex items-center gap-3">
+        <div className="icon-container">
+          {getCategoryIcon(category)}
+        </div>
+        <div>
+          <h3>{category}</h3>
+          <p>{serviceCount} services available</p>
+        </div>
+        <div className="divider-line"></div>
+      </div>
+      
+      {/* Services Grid */}
+      <div className="grid">
+        {servicesByCategory[category].map((service) => (
+          <ServiceCard service={service} />
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
+```
 
-### API Calls:
-- `GET /api/services` - Fetch all services
-- Filters client-side for active services only
+## Benefits
 
-## 🎯 Business Benefits
+1. **Better Organization**: Services are clearly grouped by type
+2. **Improved Scanning**: Users can quickly find the category they need
+3. **No Interaction Required**: All services visible without clicking
+4. **Visual Clarity**: Icons and headers make categories stand out
+5. **Mobile Friendly**: Responsive grid adapts to screen size
+6. **Professional Look**: Clean, organized layout
 
-1. **Customer-Focused**: Clean, simple booking experience
-2. **Professional**: Modern design builds trust
-3. **Informative**: Clear pricing and service details
-4. **Accessible**: Easy navigation and mobile-friendly
-5. **Integrated**: Seamless connection to booking system
+## Responsive Behavior
 
-## 📈 Conversion Optimized
+- **Mobile (< 768px)**: 1 column grid
+- **Tablet (768px - 1024px)**: 2 columns
+- **Desktop (1024px - 1280px)**: 3 columns
+- **Large Desktop (> 1280px)**: 4 columns
 
-- Clear CTAs ("Book Now" buttons)
-- Trust indicators (badges, guarantees)
-- Simple process (4 steps)
-- Direct contact options
-- No distractions (focused on booking)
+## File Modified
+
+- `app/page.tsx` - Main landing page component
+
+## Testing Checklist
+
+- [x] Services group correctly by category
+- [x] Icons display for each category
+- [x] Service cards render correctly
+- [x] Responsive grid works on all screen sizes
+- [x] Empty state handled if no services
+- [x] Loading state displays properly
+- [x] Category count shows correct numbers
+- [x] Book Now and Get Quote buttons work
+- [x] Service images display properly
+- [x] Pricing shows correctly (single and range)
+
+## Future Enhancements (Optional)
+
+1. Add category descriptions below headers
+2. Add "View All" link for each category
+3. Add category-specific background colors
+4. Add smooth scroll to category sections
+5. Add category navigation menu (jump to section)
+6. Add service count badges
+7. Add category filter toggle (show/hide categories)
+8. Add search within categories
 
 ---
 
-**Status**: ✅ Production Ready  
-**Mobile**: ✅ Fully Responsive  
-**API**: ✅ Connected to Supabase  
-**Last Updated**: 2026-07-23
+**Update Date**: January 2026  
+**Status**: ✅ Complete  
+**Impact**: Visual improvement, better UX
