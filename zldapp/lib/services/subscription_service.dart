@@ -33,6 +33,70 @@ class SubscriptionService {
     }
   }
 
+  // Create subscription plan
+  static Future<SubscriptionPlan> createSubscriptionPlan(
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/subscriptions/plans'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return SubscriptionPlan.fromJson(json.decode(response.body));
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Failed to create subscription plan');
+      }
+    } catch (e) {
+      print('Error creating subscription plan: $e');
+      rethrow;
+    }
+  }
+
+  // Update subscription plan
+  static Future<SubscriptionPlan> updateSubscriptionPlan(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('${ApiConfig.baseUrl}/subscriptions/plans/$id'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(data),
+      );
+
+      if (response.statusCode == 200) {
+        return SubscriptionPlan.fromJson(json.decode(response.body));
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Failed to update subscription plan');
+      }
+    } catch (e) {
+      print('Error updating subscription plan: $e');
+      rethrow;
+    }
+  }
+
+  // Delete subscription plan
+  static Future<void> deleteSubscriptionPlan(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseUrl}/subscriptions/plans/$id'),
+      );
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Failed to delete subscription plan');
+      }
+    } catch (e) {
+      print('Error deleting subscription plan: $e');
+      rethrow;
+    }
+  }
+
   // Get all customer subscriptions
   static Future<List<CustomerSubscription>> getSubscriptions({
     String? customerId,
@@ -83,7 +147,9 @@ class SubscriptionService {
   // Create new subscription
   static Future<CustomerSubscription> createSubscription({
     required String customerId,
-    required String subscriptionPlanId,
+    String? subscriptionPlanId,
+    double? customPrice, // NEW: Support custom pricing
+    String? billingCycle, // NEW: For custom pricing
     String? startDate,
     String? paymentMethod,
     bool isTrial = false,
@@ -91,18 +157,28 @@ class SubscriptionService {
     String? notes,
   }) async {
     try {
+      final body = <String, dynamic>{
+        'customer_id': customerId,
+        'start_date': startDate ?? DateTime.now().toIso8601String(),
+        'payment_method': paymentMethod,
+        'is_trial': isTrial,
+        'trial_end_date': trialEndDate,
+        'notes': notes,
+      };
+
+      // Add subscription plan or custom pricing
+      if (subscriptionPlanId != null) {
+        body['subscription_plan_id'] = subscriptionPlanId;
+      }
+      if (customPrice != null) {
+        body['custom_price'] = customPrice;
+        body['billing_cycle'] = billingCycle ?? 'monthly';
+      }
+
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/subscriptions'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'customer_id': customerId,
-          'subscription_plan_id': subscriptionPlanId,
-          'start_date': startDate ?? DateTime.now().toIso8601String(),
-          'payment_method': paymentMethod,
-          'is_trial': isTrial,
-          'trial_end_date': trialEndDate,
-          'notes': notes,
-        }),
+        body: json.encode(body),
       );
 
       if (response.statusCode == 201) {

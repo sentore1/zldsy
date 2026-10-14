@@ -205,7 +205,7 @@ class SupabaseService {
       final data = await supabase
           .from('jobs')
           .select('*, job_staff(*, staff(*))')
-          .in_('id', jobIds)
+          .inFilter('id', jobIds)
           .order('scheduled_date', ascending: false);
       return (data as List).map((j) => Job.fromJson(j)).toList();
     }

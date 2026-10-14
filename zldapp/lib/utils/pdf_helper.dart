@@ -174,13 +174,24 @@ pw.Widget _buildFooter(pw.Context context) {
 
 /// Write bytes to a temp file and share/save via share_plus.
 Future<void> _savePdf(Uint8List bytes, String filename) async {
-  final dir = await getTemporaryDirectory();
-  final file = File('${dir.path}/$filename');
-  await file.writeAsBytes(bytes);
-  await Share.shareXFiles(
-    [XFile(file.path, mimeType: 'application/pdf')],
-    subject: filename.replaceAll('.pdf', ''),
-  );
+  try {
+    // Try to get temporary directory
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$filename');
+    await file.writeAsBytes(bytes);
+    await Share.shareXFiles(
+      [XFile(file.path, mimeType: 'application/pdf')],
+      subject: filename.replaceAll('.pdf', ''),
+    );
+  } catch (e) {
+    // If path_provider fails, try alternative method
+    print('Error saving PDF with path_provider: $e');
+    // Share directly from bytes
+    await Share.shareXFiles(
+      [XFile.fromData(bytes, name: filename, mimeType: 'application/pdf')],
+      subject: filename.replaceAll('.pdf', ''),
+    );
+  }
 }
 
 // ── Public: Quotation PDF ─────────────────────────────────────────────────────

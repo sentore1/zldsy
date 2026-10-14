@@ -72,11 +72,16 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   // ── WhatsApp share ──────────────────────────────────────────────────────────
   Future<void> _shareViaWhatsApp(Invoice inv) async {
     try {
+      // Check if jobId exists
+      if (inv.jobId == null) {
+        throw Exception('Invoice has no associated job');
+      }
+      
       // Get customer details from job
       final jobData = await SupabaseService.supabase
           .from('jobs')
           .select('booking_id')
-          .eq('id', inv.jobId)
+          .eq('id', inv.jobId!)
           .single();
       
       final bookingData = await SupabaseService.supabase

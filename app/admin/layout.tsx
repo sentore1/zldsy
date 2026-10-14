@@ -216,6 +216,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <NavLink href="/admin/invoices" icon={<Receipt size={16} />} isNested collapsed={collapsed}>Invoices</NavLink>
               <NavLink href="/admin/payments" icon={<DollarSign size={16} />} isNested collapsed={collapsed}>Payments</NavLink>
               <NavLink href="/admin/subscriptions" icon={<Repeat size={16} />} isNested collapsed={collapsed}>Subscriptions</NavLink>
+              <NavLink href="/admin/subscription-plans" icon={<Repeat size={16} />} isNested collapsed={collapsed}>Subscription Plans</NavLink>
             </NavSection>
           )}
 

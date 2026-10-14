@@ -32,10 +32,11 @@ class _AdminShellState extends State<AdminShell> {
   }
 
   List<({IconData icon, String label, String path})> get _tabs {
-    // Staff only sees Jobs
+    // Staff sees Jobs + Profile (minimum 2 items required by BottomNavigationBar)
     if (_userRole == 'staff') {
       return const [
         (icon: Icons.work_outline, label: 'Jobs', path: '/admin/jobs'),
+        (icon: Icons.person_outline, label: 'Profile', path: '/admin/settings'),
       ];
     }
     

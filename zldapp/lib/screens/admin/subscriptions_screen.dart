@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/subscription.dart';
 import '../../services/subscription_service.dart';
 import 'package:intl/intl.dart';
+import 'subscription_plan_form_screen.dart';
+import 'subscription_form_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({Key? key}) : super(key: key);
@@ -148,8 +150,16 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
               ],
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Navigate to create subscription screen
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SubscriptionFormScreen(),
+            ),
+          );
+          if (result == true) {
+            _loadData();
+          }
         },
         child: const Icon(Icons.add),
       ),
@@ -236,44 +246,42 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 24),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
-          ),
-        ],
+              child: Icon(icon, color: color, size: 24),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -444,13 +452,45 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Available Plans',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Available Plans',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: _navigateToCreatePlan,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('New Plan'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           if (_plans.isEmpty)
-            const Center(child: Text('No plans available'))
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No plans available',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Create your first subscription plan',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else
             ListView.builder(
               shrinkWrap: true,
@@ -465,13 +505,58 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
     );
   }
 
+  Future<void> _navigateToCreatePlan() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SubscriptionPlanFormScreen(),
+      ),
+    );
+
+    if (result == true) {
+      _loadData();
+    }
+  }
+
+  Future<void> _navigateToEditPlan(SubscriptionPlan plan) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SubscriptionPlanFormScreen(plan: plan),
+      ),
+    );
+
+    if (result == true) {
+      _loadData();
+    }
+  }
+
   Widget _buildPlanCard(SubscriptionPlan plan) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
-        title: Text(
-          plan.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                plan.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18),
+              onPressed: () => _navigateToEditPlan(plan),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+              onPressed: () => _deletePlan(plan.id),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ),
         subtitle: Text(plan.billingCycleLabel),
         trailing: Text(
@@ -513,12 +598,58 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
                     'Discount',
                     '${plan.discountPercentage}%',
                   ),
+                _buildPlanDetail(
+                  'Status',
+                  plan.isActive ? 'Active' : 'Inactive',
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _deletePlan(String id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Plan'),
+        content: const Text(
+          'Are you sure you want to delete this plan? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await SubscriptionService.deleteSubscriptionPlan(id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Plan deleted successfully')),
+          );
+          _loadData();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildPlanDetail(String label, String value) {

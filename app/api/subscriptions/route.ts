@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
     const {
       customer_id,
       subscription_plan_id,
+      custom_price, // NEW: Allow custom pricing
+      billing_cycle, // NEW: For custom pricing
       start_date = new Date().toISOString(),
       payment_method,
       is_trial = false,
@@ -66,47 +68,73 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!customer_id || !subscription_plan_id) {
+    if (!customer_id) {
       return NextResponse.json(
-        { error: 'Customer ID and Subscription Plan ID are required' },
+        { error: 'Customer ID is required' },
         { status: 400 }
       );
     }
 
-    // Get plan details
-    const { data: plan, error: planError } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', subscription_plan_id)
-      .single();
-
-    if (planError || !plan) {
+    // Must have either a plan OR custom pricing
+    if (!subscription_plan_id && !custom_price) {
       return NextResponse.json(
-        { error: 'Subscription plan not found' },
-        { status: 404 }
+        { error: 'Either Subscription Plan ID or Custom Price is required' },
+        { status: 400 }
       );
     }
 
-    // Calculate pricing
-    const current_price = plan.promotional_price && 
-      plan.promotion_valid_until && 
-      new Date(plan.promotion_valid_until) > new Date()
-      ? plan.promotional_price
-      : plan.price;
+    let current_price;
+    let plan = null;
+    let usedBillingCycle = billing_cycle || 'monthly';
 
-    // Calculate next billing date
+    // If using an existing plan
+    if (subscription_plan_id) {
+      // Get plan details
+      const { data: planData, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', subscription_plan_id)
+        .single();
+
+      if (planError || !planData) {
+        return NextResponse.json(
+          { error: 'Subscription plan not found' },
+          { status: 404 }
+        );
+      }
+
+      plan = planData;
+      usedBillingCycle = plan.billing_cycle;
+
+      // Use custom price if provided, otherwise use plan price
+      current_price = custom_price || (
+        plan.promotional_price && 
+        plan.promotion_valid_until && 
+        new Date(plan.promotion_valid_until) > new Date()
+          ? plan.promotional_price
+          : plan.price
+      );
+    } else {
+      // Using custom pricing without a plan
+      current_price = custom_price;
+    }
+
+    // Calculate next billing date based on billing cycle
     const startDate = new Date(start_date);
     let next_billing_date;
 
-    switch (plan.billing_cycle) {
+    switch (usedBillingCycle) {
       case 'weekly':
-        next_billing_date = new Date(startDate.setDate(startDate.getDate() + 7));
+        next_billing_date = new Date(startDate);
+        next_billing_date.setDate(next_billing_date.getDate() + 7);
         break;
       case 'monthly':
-        next_billing_date = new Date(startDate.setMonth(startDate.getMonth() + 1));
+        next_billing_date = new Date(startDate);
+        next_billing_date.setMonth(next_billing_date.getMonth() + 1);
         break;
       case 'yearly':
-        next_billing_date = new Date(startDate.setFullYear(startDate.getFullYear() + 1));
+        next_billing_date = new Date(startDate);
+        next_billing_date.setFullYear(next_billing_date.getFullYear() + 1);
         break;
       case 'permanent':
         next_billing_date = null;
@@ -120,7 +148,7 @@ export async function POST(request: NextRequest) {
       .from('customer_subscriptions')
       .insert({
         customer_id,
-        subscription_plan_id,
+        subscription_plan_id: subscription_plan_id || null, // Can be null for custom pricing
         status: is_trial ? 'pending' : 'active',
         start_date,
         next_billing_date: next_billing_date?.toISOString(),
