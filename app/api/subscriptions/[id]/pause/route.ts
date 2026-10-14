@@ -4,11 +4,11 @@ import { getSupabaseAdmin } from '@/lib/supabase/client';
 // POST /api/subscriptions/[id]/pause - Pause a subscription
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const {
@@ -112,11 +112,11 @@ export async function POST(
 // DELETE /api/subscriptions/[id]/pause - Resume a paused subscription
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
 
     // Get active pause
     const { data: pause, error: pauseError } = await supabase

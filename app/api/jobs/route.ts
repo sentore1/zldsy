@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         throw new Error('Failed to fetch staff assignments')
       }
 
-      const jobIds = staffAssignments?.map(a => a.job_id) || []
+      const jobIds = staffAssignments?.map((a: any) => a.job_id) || []
 
       // If no jobs assigned, return empty array
       if (jobIds.length === 0) {

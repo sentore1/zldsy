@@ -4,11 +4,11 @@ import { getSupabaseAdmin } from '@/lib/supabase/client';
 // GET /api/external-links/[id] - Get external link by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabase
       .from('external_links')
@@ -41,11 +41,11 @@ export async function GET(
 // PATCH /api/external-links/[id] - Update external link
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const {
@@ -111,11 +111,11 @@ export async function PATCH(
 // DELETE /api/external-links/[id] - Delete external link
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabase
       .from('external_links')

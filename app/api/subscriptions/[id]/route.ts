@@ -4,11 +4,11 @@ import { getSupabaseAdmin } from '@/lib/supabase/client';
 // GET /api/subscriptions/[id] - Get subscription by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabase
       .from('customer_subscriptions')
@@ -50,11 +50,11 @@ export async function GET(
 // PATCH /api/subscriptions/[id] - Update subscription
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     const { status, payment_method, notes, admin_notes } = body;
@@ -94,11 +94,11 @@ export async function PATCH(
 // DELETE /api/subscriptions/[id] - Cancel subscription
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getSupabaseAdmin();
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
 
     const immediate = searchParams.get('immediate') === 'true';

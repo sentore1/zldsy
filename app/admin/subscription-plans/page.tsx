@@ -33,11 +33,25 @@ export default function SubscriptionPlansPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    service_id: string;
+    billing_cycle: 'weekly' | 'monthly' | 'yearly' | 'permanent';
+    price: string;
+    setup_fee: string;
+    included_visits: string;
+    visit_duration: string;
+    priority_level: string;
+    discount_percentage: string;
+    is_active: boolean;
+    is_featured: boolean;
+    display_order: string;
+  }>({
     name: '',
     description: '',
     service_id: '',
-    billing_cycle: 'monthly' as const,
+    billing_cycle: 'monthly',
     price: '',
     setup_fee: '0',
     included_visits: '',

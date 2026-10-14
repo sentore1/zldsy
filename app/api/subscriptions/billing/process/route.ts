@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
 
     const summary = {
       count: data?.length || 0,
-      total_amount: data?.reduce((sum, sub) => sum + (sub.current_price || 0), 0) || 0,
+      total_amount: data?.reduce((sum: number, sub: any) => sum + (sub.current_price || 0), 0) || 0,
       subscriptions: data || [],
     };
 

@@ -289,18 +289,6 @@ export interface Payment {
   created_at: string;
 }
 
-export interface Feedback {
-  id: string;
-  job_id?: string;
-  customer_id?: string;
-  rating: number;
-  comment?: string;
-  google_review_submitted: boolean;
-  created_at: string;
-  customer?: Customer;
-  job?: Job;
-}
-
 export interface Expense {
   id: string;
   job_id?: string;

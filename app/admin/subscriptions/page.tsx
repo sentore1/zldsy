@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Calendar, DollarSign, Users, TrendingUp, AlertCircle } from 'lucide-react';
-import type { CustomerSubscription, SubscriptionPlan, SubscriptionMetrics } from '@/lib/types/subscriptions';
+import type { CustomerSubscription, SubscriptionPlanWithDetails, SubscriptionMetrics } from '@/lib/types/subscriptions';
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<CustomerSubscription[]>([]);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlanWithDetails[]>([]);
   const [metrics, setMetrics] = useState<SubscriptionMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'cancelled'>('all');
@@ -209,7 +209,7 @@ export default function SubscriptionsPage() {
     }
   };
 
-  const calculateMetrics = (subs: CustomerSubscription[], plans: SubscriptionPlan[]) => {
+  const calculateMetrics = (subs: CustomerSubscription[], plans: SubscriptionPlanWithDetails[]) => {
     const activeSubscriptions = subs.filter(s => s.status === 'active');
     
     // Calculate MRR (Monthly Recurring Revenue)

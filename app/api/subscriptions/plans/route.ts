@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate active subscription counts for each plan
     const plansWithCounts = await Promise.all(
-      data.map(async (plan) => {
+      data.map(async (plan: any) => {
         const { count } = await supabase
           .from('customer_subscriptions')
           .select('*', { count: 'exact', head: true })
